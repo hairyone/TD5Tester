@@ -1,5 +1,6 @@
 package com.mooo.hairyone.td5tester;
 
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 
 //import android.app.Activity;
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     TextView LoggingTextView;
     Button ConnectButton;
     Button ClearButton;
+    boolean connected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
         LoggingTextView = (TextView) findViewById((R.id.loggingTextView));
 
         LoggingTextView.setMovementMethod(new ScrollingMovementMethod());
+        LoggingTextView.setBackgroundColor(Color.parseColor("#FFFFA5"));
 
         ConnectButton.setOnClickListener(new View.OnClickListener() {
             @Override
