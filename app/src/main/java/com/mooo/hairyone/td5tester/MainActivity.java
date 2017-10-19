@@ -1,9 +1,10 @@
 package com.mooo.hairyone.td5tester;
 
-// import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatActivity;
 
-import android.app.Activity;
+//import android.app.Activity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -14,7 +15,7 @@ import com.ftdi.j2xx.FT_Device;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     D2xxManager ftdid2xx = null;
     FT_Device ftDevice = null;
@@ -33,6 +34,8 @@ public class MainActivity extends Activity {
         ClearButton = (Button) findViewById(R.id.clearButton);
         LoggingTextView = (TextView) findViewById((R.id.loggingTextView));
 
+        LoggingTextView.setMovementMethod(new ScrollingMovementMethod());
+
         ConnectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -46,7 +49,6 @@ public class MainActivity extends Activity {
                 log_clear();
             }
         });
-
 
     }
 
@@ -68,6 +70,8 @@ public class MainActivity extends Activity {
             ftdid2xx = D2xxManager.getInstance(getApplicationContext());
             device_count = ftdid2xx.createDeviceInfoList(getApplicationContext());
 
+            log_append("");
+            log_append(String.format("connecting", device_count));
             log_append(String.format("device_count=%d", device_count));
 
             if (device_count > 0) {
