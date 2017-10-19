@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
 
     TextView LoggingTextView;
     Button ConnectButton;
+    Button ClearButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +30,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         ConnectButton = (Button) findViewById(R.id.connectButton);
+        ClearButton = (Button) findViewById(R.id.clearButton);
         LoggingTextView = (TextView) findViewById((R.id.loggingTextView));
 
         ConnectButton.setOnClickListener(new View.OnClickListener() {
@@ -37,6 +39,14 @@ public class MainActivity extends Activity {
                 connect();
             }
         });
+
+        ClearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                log_clear();
+            }
+        });
+
 
     }
 
@@ -53,7 +63,7 @@ public class MainActivity extends Activity {
 
     public void connect() {
         // Toast.makeText(getApplicationContext(), "Connecting ...", Toast.LENGTH_SHORT).show();
-        log_clear();
+        // log_clear();
         try {
             ftdid2xx = D2xxManager.getInstance(getApplicationContext());
             device_count = ftdid2xx.createDeviceInfoList(getApplicationContext());
