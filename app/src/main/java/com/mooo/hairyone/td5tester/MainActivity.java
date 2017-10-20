@@ -18,10 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-
     Context application_context;
-
-
     D2xxManager d2xx_manager = null;
     D2xxManager.FtDeviceInfoListNode[] device_list = null;
     FT_Device ft_device = null;
@@ -110,31 +107,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void fast_init() {
-            if (device_count > 0) {
-                log_append("fast_init");
+        //Mask = 0x00  // all input
+        //Mask = 0xFF  // all output
+        //Mask = 0x0F  // upper nibble input,lower nibble output
+
+        //#define PIN_TX  0x01  /* Orange wire on FTDI cable */
+        //#define PIX_RX  0x02  /* Yellow */
+        //#define PIN_RTS 0x04  /* Green */
+        //#define PIN_CTS 0x08  /* Brown */
+        //#define PIN_DTR 0x10
+        //#define PIN_DSR 0x20
+        //#define PIN_DCD 0x40
+        //#define PIN_RI  0x80
+
+
+        if (device_count > 0) {
+            log_append("fast_init");
+            try {
                 ft_device = d2xx_manager.openByIndex(application_context, 0);
                 ft_device.setBaudRate(10400);
                 ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE);
 
-                //Mask = 0x00  // all input
-                //Mask = 0xFF  // all output
-                //Mask = 0x0F  // upper nibble input,lower nibble output
-
-                //#define PIN_TX  0x01  /* Orange wire on FTDI cable */
-                //#define PIX_RX  0x02  /* Yellow */
-                //#define PIN_RTS 0x04  /* Green */
-                //#define PIN_CTS 0x08  /* Brown */
-                //#define PIN_DTR 0x10
-                //#define PIN_DSR 0x20
-                //#define PIN_DCD 0x40
-                //#define PIN_RI  0x80
-
                 ft_device.setBitMode((byte) 0x01, D2xxManager.FT_BITMODE_ASYNC_BITBANG);
 
-                byte[] HI = new byte [] {(byte)0x01};
-                byte[] LO = new byte [] {(byte)0x00};
-
-                long endTime = System.currentTimeMillis();
+                byte[] HI = new byte[]{(byte) 0x01};
+                byte[] LO = new byte[]{(byte) 0x00};
 
                 try {
                     ft_device.write(HI, 1);
@@ -149,7 +146,10 @@ public class MainActivity extends AppCompatActivity {
 
                 ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_RESET);
                 ft_device.close();
+            } catch (Exception ex) {
+                log_append(ex.getMessage());
             }
+        }
 
 }
 

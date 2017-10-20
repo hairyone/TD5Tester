@@ -1,61 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.mooo.hairyone.td5tester.MainActivity">
+    tools:context="com.mooo.hairyone.td5tester.MainActivity"
+    android:background="#257998"
+    android:padding="10dp"
+    android:orientation="vertical">
 
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginLeft="8dp"
-        android:onClick="handle_connect"
-        android:text="Connect"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent" />
+        android:padding="10dp"
+        android:background="#2892A6"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/loggingTextView"
-        android:layout_width="330dp"
-        android:layout_height="409dp"
-        android:layout_gravity="start"
-        android:layout_marginBottom="100dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="8dp"
-        android:fontFamily="monospace"
-        android:text="Logging output goes here ..."
-        android:textAlignment="viewStart"
-        android:scrollbars="vertical"
-        android:gravity="bottom"
-        android:verticalScrollbarPosition="defaultPosition"
-        app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        android:layout_marginRight="8dp"
-        app:layout_constraintRight_toRightOf="parent" />
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Connect" />
 
-    <Button
-        android:id="@+id/clearButton"
-        android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/clearButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Clear" />
+
+        <Button
+            android:id="@+id/disconnectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Disconnect" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginLeft="8dp"
-        android:text="Clear"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@+id/connectButton" />
+        android:padding="10dp"
+        android:background="#3AAAAF"
+        android:orientation="horizontal"
+        android:layout_weight="1">
 
-    <Button
-        android:id="@+id/disconnectButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Disconnect"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@+id/clearButton"
-        android:layout_marginLeft="8dp" />
+        <TextView
+            android:id="@+id/loggingTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:background="#FFFFA5"
+            android:text="Press connect ..." />
 
-</android.support.constraint.ConstraintLayout>
+    </LinearLayout>
+
+</LinearLayout>
