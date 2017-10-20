@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     FT_Device ft_device = null;
 
     int device_count;
+    TD5Const td5const = new TD5Const();
 
     TextView LoggingTextView;
     Button ConnectButton;
@@ -156,18 +157,39 @@ public class MainActivity extends AppCompatActivity {
     public String get_device_type(int device_type) {
         String result = "unknown device";
         switch (device_type) {
-            case D2xxManager.FT_DEVICE_232B: result = "FT232B"; break;
-            case D2xxManager.FT_DEVICE_8U232AM: result = "FT8U232AM"; break;
-            case D2xxManager.FT_DEVICE_UNKNOWN: result = "Unknown"; break;
-            case D2xxManager.FT_DEVICE_2232: result = "FT2232"; break;
-            case D2xxManager.FT_DEVICE_232R: result = "FT232R"; break;
-            case D2xxManager.FT_DEVICE_2232H: result = "FT2232H"; break;
-            case D2xxManager.FT_DEVICE_4232H: result = "FT4232H"; break;
-            case D2xxManager.FT_DEVICE_232H: result = "FT232H"; break;
-            case D2xxManager.FT_DEVICE_X_SERIES: result = "FTDI X_SERIES"; break;
-            default: result = "FT232B"; break;
+            case D2xxManager.FT_DEVICE_232B:        result = "FT232B";          break;
+            case D2xxManager.FT_DEVICE_8U232AM:     result = "FT8U232AM";       break;
+            case D2xxManager.FT_DEVICE_UNKNOWN:     result = "Unknown";         break;
+            case D2xxManager.FT_DEVICE_2232:        result = "FT2232";          break;
+            case D2xxManager.FT_DEVICE_232R:        result = "FT232R";          break;
+            case D2xxManager.FT_DEVICE_2232H:       result = "FT2232H";         break;
+            case D2xxManager.FT_DEVICE_4232H:       result = "FT4232H";         break;
+            case D2xxManager.FT_DEVICE_232H:        result = "FT232H";          break;
+            case D2xxManager.FT_DEVICE_X_SERIES:    result = "FTDI X_SERIES";   break;
+            default:                                result = "FT232B";          break;
         }
         return result;
     }
+
+    boolean get_pid(TD5Const.Pid pid) {
+        boolean result = false;
+        if (connected == false) log_append(String.format("sending %s", td5const.pid_requests[pid.ordinal()].name));
+        /*
+        send(pid_request[pid], pid_details[pid].request_len);
+        byte cnt = readResponse(pid);
+        if (cnt > 1) {
+            byte cs1 = response[cnt - 1];
+            byte cs2 = checksum(response, cnt - 1);
+            if (cs1 == cs2) {
+                if (response[1] != 0x7F) {
+                    result = true;
+                }
+            }
+        }
+        */
+        return result;
+    }
+
+
 
 }
