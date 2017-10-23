@@ -1,10 +1,13 @@
 package com.mooo.hairyone.td5tester;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 
-//import android.app.Activity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -18,85 +21,130 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-    Context application_context;
-    D2xxManager d2xx_manager = null;
-    D2xxManager.FtDeviceInfoListNode[] device_list = null;
-    FT_Device ft_device = null;
 
-    int device_count;
-    TD5Const td5const = new TD5Const();
+    private static D2xxManager d2xx_manager = null;
+    private FT_Device ft_device = null;
 
-    TextView LoggingTextView;
-    Button ConnectButton;
-    Button ClearButton;
+    TextView tvInfo;
+    Button btConnect;
+    Button btClear;
+
+    byte[] response = new byte[TD5_Constants.BUFFER_SIZE];
+
     boolean connected = false;
+    TD5_Requests td5_requests = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        application_context = getApplicationContext();
+        btConnect = (Button) findViewById(R.id.btConnect);
+        btClear = (Button) findViewById(R.id.btClear);
+        tvInfo = (TextView) findViewById(R.id.tvInfo);
+        tvInfo.setMovementMethod(new ScrollingMovementMethod());
+        tvInfo.setBackgroundColor(Color.parseColor("#FFFFA5"));
 
-        ConnectButton = (Button) findViewById(R.id.connectButton);
-        ClearButton = (Button) findViewById(R.id.clearButton);
-        LoggingTextView = (TextView) findViewById((R.id.loggingTextView));
-        LoggingTextView.setMovementMethod(new ScrollingMovementMethod());
-        LoggingTextView.setBackgroundColor(Color.parseColor("#FFFFA5"));
-
-        ConnectButton.setOnClickListener(new View.OnClickListener() {
+        btConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                connect();
+                openDevice();
+                fast_init();
             }
         });
 
-        ClearButton.setOnClickListener(new View.OnClickListener() {
+        btClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 log_clear();
             }
         });
 
+        try {
+            d2xx_manager = D2xxManager.getInstance(this);
+        } catch (Exception ex) {
+            log_append(ex.getMessage());
+        }
+
+        /*
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        registerReceiver(mUsbReceiver, filter);
+        */
+
+        td5_requests = new TD5_Requests();
     }
 
-    public void log_clear() {
-        LoggingTextView.setText("");
+    void log_clear() {
+        tvInfo.setText("");
     }
 
-    public void log_append(String text) {
+    void log_append(String text) {
         // SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
         Date now = new Date();
         // LoggingTextView.append(String.format("%s : %s\n", sdf.format(now), text));
-        LoggingTextView.append(String.format("%s\n", text));
+        tvInfo.append(String.format("%s\n", text));
+        tvInfo.postInvalidate();
     }
 
-    public void connect() {
-        log_append("");
-        log_append(String.format("connecting"));
-
+    private void openDevice() {
+        log_append("openDevice");
         try {
-            d2xx_manager = D2xxManager.getInstance(application_context);
-            device_count = d2xx_manager.createDeviceInfoList(application_context);
+            if (ft_device != null) {
+                if (ft_device.isOpen()) {
+                    ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
+                    ft_device.restartInTask();
+                    return;
+                }
+            }
+
+            int device_count = 0;
+            D2xxManager.FtDeviceInfoListNode[] device_list = null;
+            device_count = d2xx_manager.createDeviceInfoList(this);
             device_list = new D2xxManager.FtDeviceInfoListNode[device_count];
             d2xx_manager.getDeviceInfoList(device_count, device_list);
 
-            log_append(String.format("library_version=%d", D2xxManager.getLibraryVersion()));
-            log_append(String.format("device_count=%d", device_count));
-
+            if (device_count <= 0) {
+                return;
+            }
             for (D2xxManager.FtDeviceInfoListNode ft_device_info_list_node : device_list) {
                 log_device_info(ft_device_info_list_node);
             }
 
-            fast_init();
+            if (ft_device == null) {
+                ft_device = d2xx_manager.openByIndex(this, 0);
+            } else {
+                synchronized (ft_device) {
+                    ft_device = d2xx_manager.openByIndex(this, 0);
+                }
+            }
 
-        } catch (D2xxManager.D2xxException e) {
-            log_append(String.format("error=%s", e.getMessage()));
-            e.printStackTrace();
+            if (ft_device != null) {
+                if (ft_device.isOpen()) {
+                    ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
+                    ft_device.restartInTask();
+                }
+            }
+        } catch (Exception ex) {
+            log_append(ex.getMessage());
         }
-
     }
+
+
+    void seed_test() {
+        // https://github.com/pajacobson/td5keygen
+        // Seed request      | Seed response
+        // 04 67 01 34 A5 45 | 04 27 02 54 D3 54
+        //          ^^ ^^    |          ^^ ^^
+
+        int seed = 0x34 << 8 | 0xA5;
+        int key = generate_key(seed);
+
+        log_append(String.format("\nseed=%d, key=%s",seed, key));
+    }
+
 
     public void log_device_info(D2xxManager.FtDeviceInfoListNode ft_device_info_list_node) {
         log_append(String.format("serial_number=%s", ft_device_info_list_node.serialNumber == null ? "null" : ft_device_info_list_node.serialNumber));
@@ -121,40 +169,70 @@ public class MainActivity extends AppCompatActivity {
         //#define PIN_DCD 0x40
         //#define PIN_RI  0x80
 
-
-        if (device_count > 0) {
+        if (ft_device != null) {
             log_append("fast_init");
             try {
-                ft_device = d2xx_manager.openByIndex(application_context, 0);
-                ft_device.setBaudRate(10400);
-                ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE);
-
-                ft_device.setBitMode((byte) 0x01, D2xxManager.FT_BITMODE_ASYNC_BITBANG);
+                log_append(String.format("setBaudRate=%b", ft_device.setBaudRate(9600)));
+                // log_append(String.format("setDataCharacteristics=%b", ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE)));
+                log_append(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_ASYNC_BITBANG)));
 
                 byte[] HI = new byte[]{(byte) 0x01};
                 byte[] LO = new byte[]{(byte) 0x00};
 
-                try {
-                    ft_device.write(HI, 1);
-                    Thread.sleep(50);
-                    ft_device.write(LO, 1);
-                    Thread.sleep(25);
-                    ft_device.write(HI, 1);
-                    Thread.sleep(25);
-                } catch (Exception ex) {
-                    log_append(ex.getMessage());
+                log_append(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(500);
+                log_append(String.format("LO=%d", ft_device.write(LO, 1))); Thread.sleep(25);
+                log_append(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(25);
+
+                // flush any data from the device buffers
+                synchronized(ft_device) {
+                    log_append(String.format("purge=%b", ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX))));
+                    // log_append(String.format("resetDevice=%b", ft_device.resetDevice()));
                 }
 
-                ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_RESET);
-                ft_device.close();
+                log_append(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_RESET)));
+                log_append(String.format("setBaudRate=%b", ft_device.setBaudRate(10400)));
+                log_append(String.format("setDataCharacteristics=%b", ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE)));
+
+                if (get_pid(TD5_Pids.Pid.INIT_FRAME) && get_pid(TD5_Pids.Pid.START_DIAGNOSTICS) && get_pid(TD5_Pids.Pid.REQUEST_SEED)) {
+                    int seed = (short) (response[3] << 8 | response[4]);
+                    int key = generate_key(seed);
+                    td5_requests.request.get(TD5_Pids.Pid.KEY_RETURN).request[3] = (byte) (key >> 8);
+                    td5_requests.request.get(TD5_Pids.Pid.KEY_RETURN).request[4] = (byte) (key & 0xFF);
+                    connected = get_pid(TD5_Pids.Pid.KEY_RETURN);
+                }
+
+                closeDevice();
+
             } catch (Exception ex) {
                 log_append(ex.getMessage());
             }
         }
 
-}
+    }
 
-    public String get_device_type(int device_type) {
+    int generate_key(int seedin) {
+        // we have to use an int because java doesn't do unsigned values so we use the lower 16 bits of an int
+        int seed = seedin;
+        int count = ((seed >> 0xC & 0x8) + (seed >> 0x5 & 0x4) + (seed >> 0x3 & 0x2) + (seed & 0x1)) + 1; // count == byte (0 .. 255)
+        // log_append(String.format("\ncount=%d", count));
+
+        for (int idx = 0; idx < count; idx++) {
+            int tap = ((seed >> 1) + (seed >> 2) + (seed >> 8) + (seed >> 9)) & 1; // tap byte (0 .. 1)
+            int tmp = (seed >> 1 & 0xFFFF) | ( tap << 0xF); // short (0 .. 65535)
+
+            if ( (seed >> 0x3 & 1) == 1 && (seed >> 0xD & 1) == 1) {
+                seed = tmp & ~1;
+            } else {
+                seed = tmp | 1;
+            }
+            // log_append(String.format("tap=%d, tmp=%d, a=%d, b=%d, seed=%d", tap, tmp, seed >> 0x03 & 1, seed >> 0x0d & 1, seed));
+        }
+
+        log_append(String.format("seed=%d, key=%d", seedin, seed));
+        return seed;
+    }
+
+    String get_device_type(int device_type) {
         String result = "unknown device";
         switch (device_type) {
             case D2xxManager.FT_DEVICE_232B:        result = "FT232B";          break;
@@ -171,25 +249,112 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    boolean get_pid(TD5Const.Pid pid) {
+    boolean get_pid(TD5_Pids.Pid pid) {
         boolean result = false;
-        if (connected == false) log_append(String.format("sending %s", td5const.pid_requests[pid.ordinal()].name));
-        /*
-        send(pid_request[pid], pid_details[pid].request_len);
-        byte cnt = readResponse(pid);
-        if (cnt > 1) {
-            byte cs1 = response[cnt - 1];
-            byte cs2 = checksum(response, cnt - 1);
+        if (connected == false) log_append(String.format("sending %s", td5_requests.request.get(pid).name));
+        send(td5_requests.request.get(pid).request, td5_requests.request.get(pid).request_len);
+
+        int len = readResponse(pid);
+        if (len > 1) {
+            byte cs1 = response[len - 1];
+            byte cs2 = checksum(response, len - 1);
             if (cs1 == cs2) {
                 if (response[1] != 0x7F) {
                     result = true;
                 }
             }
         }
-        */
+
         return result;
     }
 
+    void send(byte[] data, int len) {
+        data[len - 1] = checksum(data, len - 1);
+        if (connected == false) log_data(data, len, true);
+        ft_device.write(data, len);
+    }
 
+    byte checksum(byte[] data, int len) {
+        byte crc = 0;
+        for (int i = 0; i < len; i++) {
+            crc = (byte) (crc + data[i]);
+        }
+        return crc;
+    }
 
+    static String data_to_string(byte[] data, int len){
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++){
+            sb.append(String.format("%02X ", data[i] & 0xFF));
+        }
+        return sb.toString();
+    }
+
+    int readResponse(TD5_Pids.Pid pid) {
+        // When waiting for a request do we know how many characters to expect ?
+        // The response could be: garbage, a negative response, or shorter than we expected
+        // A valid response cannot be shorter than two bytes, and until we get the checksum
+        // we don't know if the length byte is correct.  If the response if garbage we need
+        // to empty the receive buffer anyway to get back in sync.
+
+        // REQUESTING INIT FRAME
+        // >> 81 13 F7 81 0C
+        // << FF FF 03 C1 57 8F AA
+        // REQUESTING START DIAGNOSTICS
+        // >> 02 10 A0 B2
+        // << FF FF 01 50 51
+        // REQUESTING REQUEST SEED
+        // >> 02 27 01 2A
+        // << FF FF FF FF 04 67 01 52 25 E3
+        // REQUESTING KEY RETURN
+        // >> 04 27 02 14 89 CA
+        // << FF FF FF FF 02 67 02 6B
+
+        int len = 0;
+        if (TD5_Constants.CAUTIOUS_READ) {
+            // keep reading up until the timeout
+            len = ft_device.read(response, TD5_Constants.BUFFER_SIZE, TD5_Constants.READ_RESPONSE_TIMEOUT);
+        } else {
+            len = ft_device.read(response, td5_requests.request.get(pid).response_len);
+        }
+
+        log_append(String.format("len=%d", len));
+
+        if (connected == false) log_data(response, len, false);
+        return len;
+    }
+
+    void log_data(byte[] data, int len, boolean is_tx) {
+        log_append(String.format("%s %s", is_tx ? ">>" : "<<", data_to_string(data, len)));
+    }
+
+    private void closeDevice() {
+        if(ft_device != null) {
+            ft_device.close();
+        }
+    }
+
+    //@Override
+    //protected void onNewIntent(Intent intent) {
+    //    //log_append("usb device attached - new intent");
+    //    openDevice();
+    //};
+
+    BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                // never come here(when attached, go to onNewIntent)
+                //log_append("usb device attached");
+                openDevice();
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                //log_append("usb device detached");
+                closeDevice();
+            }
+        }
+    };
+    public void onDestroy() {
+        super.onDestroy();
+        //unregisterReceiver(mUsbReceiver);
+    }
 }
