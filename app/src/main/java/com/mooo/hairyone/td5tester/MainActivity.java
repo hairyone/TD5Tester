@@ -1,11 +1,8 @@
 package com.mooo.hairyone.td5tester;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
-import android.hardware.usb.UsbManager;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -13,6 +10,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.util.Log;
 
 import com.ftdi.j2xx.D2xxManager;
 import com.ftdi.j2xx.FT_Device;
@@ -34,6 +32,31 @@ public class MainActivity extends AppCompatActivity {
     boolean connected = false;
     TD5_Requests td5_requests = null;
 
+    private static final int LOG_MSG = 1;
+    private static final int SET_CONNECTION_STATE = 2;
+
+    private final Handler myHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case (LOG_MSG):
+                    log_append((String) msg.obj);
+                    break;
+                case (SET_CONNECTION_STATE):
+                    connected = (boolean) msg.obj;
+                    break;
+            }
+        }
+    };
+
+    public void log_msg(String msg) {
+        myHandler.sendMessage(Message.obtain(myHandler, LOG_MSG, msg));
+    }
+
+    public void set_connection_state(boolean connected) {
+        myHandler.sendMessage(Message.obtain(myHandler, LOG_MSG, connected));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,8 +71,14 @@ public class MainActivity extends AppCompatActivity {
         btConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openDevice();
-                fast_init();
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        openDevice();
+                        fast_init();
+                    }
+                });
+                thread.start();
             }
         });
 
@@ -63,16 +92,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             d2xx_manager = D2xxManager.getInstance(this);
         } catch (Exception ex) {
-            log_append(ex.getMessage());
+            log_msg(ex.getMessage());
         }
-
-        /*
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        registerReceiver(mUsbReceiver, filter);
-        */
-
         td5_requests = new TD5_Requests();
     }
 
@@ -82,22 +103,20 @@ public class MainActivity extends AppCompatActivity {
 
     void log_append(String text) {
         // SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-        Date now = new Date();
+        // SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+        // Date now = new Date();
         // LoggingTextView.append(String.format("%s : %s\n", sdf.format(now), text));
         tvInfo.append(String.format("%s\n", text));
-        tvInfo.postInvalidate();
+        Log.w("TD5Tester", text);
     }
 
     private void openDevice() {
-        log_append("openDevice");
         try {
-            if (ft_device != null) {
-                if (ft_device.isOpen()) {
-                    ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
-                    ft_device.restartInTask();
-                    return;
-                }
+            if (ft_device != null &&  ft_device.isOpen()) {
+                log_msg("device already open");
+                ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
+                ft_device.restartInTask();
+                return;
             }
 
             int device_count = 0;
@@ -107,31 +126,22 @@ public class MainActivity extends AppCompatActivity {
             d2xx_manager.getDeviceInfoList(device_count, device_list);
 
             if (device_count <= 0) {
+                log_msg("no ftdi devices detected");
                 return;
             }
             for (D2xxManager.FtDeviceInfoListNode ft_device_info_list_node : device_list) {
                 log_device_info(ft_device_info_list_node);
             }
 
-            if (ft_device == null) {
-                ft_device = d2xx_manager.openByIndex(this, 0);
-            } else {
-                synchronized (ft_device) {
-                    ft_device = d2xx_manager.openByIndex(this, 0);
-                }
-            }
+            ft_device = d2xx_manager.openByIndex(this, 0);
+            //ft_device.setLatencyTimer((byte) 16);
+            //ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
+            //ft_device.restartInTask();
 
-            if (ft_device != null) {
-                if (ft_device.isOpen()) {
-                    ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX));
-                    ft_device.restartInTask();
-                }
-            }
         } catch (Exception ex) {
-            log_append(ex.getMessage());
+            log_msg(ex.getMessage());
         }
     }
-
 
     void seed_test() {
         // https://github.com/pajacobson/td5keygen
@@ -142,17 +152,16 @@ public class MainActivity extends AppCompatActivity {
         int seed = 0x34 << 8 | 0xA5;
         int key = generate_key(seed);
 
-        log_append(String.format("\nseed=%d, key=%s",seed, key));
+        log_msg(String.format("\nseed=%d, key=%s",seed, key));
     }
 
-
     public void log_device_info(D2xxManager.FtDeviceInfoListNode ft_device_info_list_node) {
-        log_append(String.format("serial_number=%s", ft_device_info_list_node.serialNumber == null ? "null" : ft_device_info_list_node.serialNumber));
-        log_append(String.format("description=%s", ft_device_info_list_node.description == null ? "null" : ft_device_info_list_node.description));
-        log_append(String.format("location=%d", ft_device_info_list_node.location));
-        log_append(String.format("id=%s", ft_device_info_list_node.id));
-        log_append(String.format("type=%d", ft_device_info_list_node.type));
-        log_append(String.format("type_name=%s", get_device_type(ft_device_info_list_node.type)));
+        log_msg(String.format("serial_number=%s", ft_device_info_list_node.serialNumber == null ? "null" : ft_device_info_list_node.serialNumber));
+        log_msg(String.format("description=%s", ft_device_info_list_node.description == null ? "null" : ft_device_info_list_node.description));
+        log_msg(String.format("location=%d", ft_device_info_list_node.location));
+        log_msg(String.format("id=%s", ft_device_info_list_node.id));
+        log_msg(String.format("type=%d", ft_device_info_list_node.type));
+        log_msg(String.format("type_name=%s", get_device_type(ft_device_info_list_node.type)));
     }
 
     public void fast_init() {
@@ -170,28 +179,27 @@ public class MainActivity extends AppCompatActivity {
         //#define PIN_RI  0x80
 
         if (ft_device != null) {
-            log_append("fast_init");
             try {
-                log_append(String.format("setBaudRate=%b", ft_device.setBaudRate(9600)));
-                // log_append(String.format("setDataCharacteristics=%b", ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE)));
-                log_append(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_ASYNC_BITBANG)));
+                log_msg(String.format("setBaudRate=%b", ft_device.setBaudRate(10400)));
+                log_msg(String.format("setDataCharacteristics=%b", ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE)));
+                log_msg(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0x01, D2xxManager.FT_BITMODE_ASYNC_BITBANG)));
 
                 byte[] HI = new byte[]{(byte) 0x01};
                 byte[] LO = new byte[]{(byte) 0x00};
 
-                log_append(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(500);
-                log_append(String.format("LO=%d", ft_device.write(LO, 1))); Thread.sleep(25);
-                log_append(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(25);
+                long current = System.currentTimeMillis();
+                log_msg(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(350);
+                log_msg(String.format("elapsed=%d", System.currentTimeMillis() - current)); current = System.currentTimeMillis();
+                log_msg(String.format("LO=%d", ft_device.write(LO, 1))); Thread.sleep(30);
+                log_msg(String.format("elapsed=%d", System.currentTimeMillis() - current)); current = System.currentTimeMillis();
+                log_msg(String.format("HI=%d", ft_device.write(HI, 1))); Thread.sleep(100);
+                log_msg(String.format("elapsed=%d", System.currentTimeMillis() - current)); current = System.currentTimeMillis();
 
                 // flush any data from the device buffers
-                synchronized(ft_device) {
-                    log_append(String.format("purge=%b", ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX))));
-                    // log_append(String.format("resetDevice=%b", ft_device.resetDevice()));
-                }
+                log_msg(String.format("purge=%b", ft_device.purge((byte) (D2xxManager.FT_PURGE_TX | D2xxManager.FT_PURGE_RX))));
+                log_msg(String.format("queued_bytes=%d", ft_device.getQueueStatus()));
 
-                log_append(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0xFF, D2xxManager.FT_BITMODE_RESET)));
-                log_append(String.format("setBaudRate=%b", ft_device.setBaudRate(10400)));
-                log_append(String.format("setDataCharacteristics=%b", ft_device.setDataCharacteristics(D2xxManager.FT_DATA_BITS_8, D2xxManager.FT_STOP_BITS_1, D2xxManager.FT_PARITY_NONE)));
+                log_msg(String.format("setBitMode=%b", ft_device.setBitMode((byte) 0x00, D2xxManager.FT_BITMODE_RESET)));
 
                 if (get_pid(TD5_Pids.Pid.INIT_FRAME) && get_pid(TD5_Pids.Pid.START_DIAGNOSTICS) && get_pid(TD5_Pids.Pid.REQUEST_SEED)) {
                     int seed = (short) (response[3] << 8 | response[4]);
@@ -201,10 +209,8 @@ public class MainActivity extends AppCompatActivity {
                     connected = get_pid(TD5_Pids.Pid.KEY_RETURN);
                 }
 
-                closeDevice();
-
             } catch (Exception ex) {
-                log_append(ex.getMessage());
+                log_msg(ex.getMessage());
             }
         }
 
@@ -214,21 +220,18 @@ public class MainActivity extends AppCompatActivity {
         // we have to use an int because java doesn't do unsigned values so we use the lower 16 bits of an int
         int seed = seedin;
         int count = ((seed >> 0xC & 0x8) + (seed >> 0x5 & 0x4) + (seed >> 0x3 & 0x2) + (seed & 0x1)) + 1; // count == byte (0 .. 255)
-        // log_append(String.format("\ncount=%d", count));
-
+        // Log.d(String.format("\ncount=%d", count));
         for (int idx = 0; idx < count; idx++) {
             int tap = ((seed >> 1) + (seed >> 2) + (seed >> 8) + (seed >> 9)) & 1; // tap byte (0 .. 1)
             int tmp = (seed >> 1 & 0xFFFF) | ( tap << 0xF); // short (0 .. 65535)
-
             if ( (seed >> 0x3 & 1) == 1 && (seed >> 0xD & 1) == 1) {
                 seed = tmp & ~1;
             } else {
                 seed = tmp | 1;
             }
-            // log_append(String.format("tap=%d, tmp=%d, a=%d, b=%d, seed=%d", tap, tmp, seed >> 0x03 & 1, seed >> 0x0d & 1, seed));
+            // Log.d(String.format("tap=%d, tmp=%d, a=%d, b=%d, seed=%d", tap, tmp, seed >> 0x03 & 1, seed >> 0x0d & 1, seed));
         }
-
-        log_append(String.format("seed=%d, key=%d", seedin, seed));
+        // Log.d(String.format("seed=%d, key=%d", seedin, seed));
         return seed;
     }
 
@@ -251,9 +254,7 @@ public class MainActivity extends AppCompatActivity {
 
     boolean get_pid(TD5_Pids.Pid pid) {
         boolean result = false;
-        if (connected == false) log_append(String.format("sending %s", td5_requests.request.get(pid).name));
-        send(td5_requests.request.get(pid).request, td5_requests.request.get(pid).request_len);
-
+        send(pid);
         int len = readResponse(pid);
         if (len > 1) {
             byte cs1 = response[len - 1];
@@ -264,13 +265,17 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-
         return result;
     }
 
-    void send(byte[] data, int len) {
+    void send(TD5_Pids.Pid pid) {
+        int len     = td5_requests.request.get(pid).request_len;
+        byte[] data = td5_requests.request.get(pid).request;
+        String name = td5_requests.request.get(pid).name;
+
         data[len - 1] = checksum(data, len - 1);
-        if (connected == false) log_data(data, len, true);
+        log_msg(name);
+        log_data(data, len, true);
         ft_device.write(data, len);
     }
 
@@ -282,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         return crc;
     }
 
-    static String data_to_string(byte[] data, int len){
+    static String byte_array_to_hex(byte[] data, int len){
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < len; i++){
             sb.append(String.format("%02X ", data[i] & 0xFF));
@@ -310,51 +315,28 @@ public class MainActivity extends AppCompatActivity {
         // >> 04 27 02 14 89 CA
         // << FF FF FF FF 02 67 02 6B
 
-        int len = 0;
-        if (TD5_Constants.CAUTIOUS_READ) {
-            // keep reading up until the timeout
-            len = ft_device.read(response, TD5_Constants.BUFFER_SIZE, TD5_Constants.READ_RESPONSE_TIMEOUT);
-        } else {
-            len = ft_device.read(response, td5_requests.request.get(pid).response_len);
-        }
-
-        log_append(String.format("len=%d", len));
-
-        if (connected == false) log_data(response, len, false);
+        log_msg(String.format("queued_bytes=%d", ft_device.getQueueStatus()));
+        int len = ft_device.read(response, TD5_Constants.BUFFER_SIZE, TD5_Constants.READ_RESPONSE_TIMEOUT);
+        log_data(response, len, false);
         return len;
     }
 
     void log_data(byte[] data, int len, boolean is_tx) {
-        log_append(String.format("%s %s", is_tx ? ">>" : "<<", data_to_string(data, len)));
+        log_msg(String.format("%s %s", is_tx ? ">>" : "<<", byte_array_to_hex(data, len)));
     }
 
     private void closeDevice() {
-        if(ft_device != null) {
-            ft_device.close();
+        if(ft_device != null && ft_device.isOpen()) {
+            try {
+                ft_device.close();
+            } catch (Exception ex) {
+                log_msg(ex.getMessage());
+            }
         }
     }
 
-    //@Override
-    //protected void onNewIntent(Intent intent) {
-    //    //log_append("usb device attached - new intent");
-    //    openDevice();
-    //};
-
-    BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-                // never come here(when attached, go to onNewIntent)
-                //log_append("usb device attached");
-                openDevice();
-            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
-                //log_append("usb device detached");
-                closeDevice();
-            }
-        }
-    };
     public void onDestroy() {
         super.onDestroy();
-        //unregisterReceiver(mUsbReceiver);
+        closeDevice();
     }
 }
