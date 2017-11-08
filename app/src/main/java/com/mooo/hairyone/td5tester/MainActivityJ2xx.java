@@ -99,24 +99,24 @@ public class MainActivityJ2xx extends AppCompatActivity {
     }
 
     void log_append(String text) {
-        // SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        // SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-        // Date now = new Date();
-        // LoggingTextView.append(String.format("%s : %s\n", sdf.format(now), text));
         tvInfo.append(String.format("%s\n", text));
         Log.w("TD5Tester", text);
     }
 
     private void openDevice() {
         try {
-            int device_count = d2xx_manager.createDeviceInfoList(this);
+            if (ft_device == null) {
 
-            if (device_count <= 0) {
-                log_msg("no ftdi devices detected");
-                return;
+                int device_count = d2xx_manager.createDeviceInfoList(this);
+
+                if (device_count <= 0) {
+                    log_msg("no ftdi devices detected");
+                    return;
+                }
+
+                ft_device = d2xx_manager.openByIndex(this, 0);
+                log_msg(String.format("ft_device=%s", ft_device.getDeviceInfo().description));
             }
-
-            ft_device = d2xx_manager.openByIndex(this, 0);
 
         } catch (Exception ex) {
             log_msg(ex.toString());
@@ -228,14 +228,18 @@ public class MainActivityJ2xx extends AppCompatActivity {
         // >> 04 27 02 14 89 CA
         // << FF FF FF FF 02 67 02 6B
 
-        log_msg(String.format("queued_bytes=%d", ft_device.getQueueStatus()));
+        int queued_bytes = ft_device.getQueueStatus();
+        log_msg(String.format("queued_bytes=%d", queued_bytes));
         // Here we wait for BUFFER_SIZE bytes to arrive or the timeout to elapse, give that most responses
         // are much smaller than buffer size, this will always run up to the timeout. Not fast but useful
         // for initial debugging.
-        int len = ft_device.read(response, TD5_Constants.BUFFER_SIZE, TD5_Constants.READ_RESPONSE_TIMEOUT);
-        log_msg(String.format("len=%d", len));
-        log_data(response, len, false);
-        return len;
+        int bytes_read = 0;
+        if (queued_bytes > 0) {
+            bytes_read = ft_device.read(response, TD5_Constants.BUFFER_SIZE, TD5_Constants.READ_RESPONSE_TIMEOUT);
+        }
+        log_msg(String.format("bytes_read=%d", bytes_read));
+        log_data(response, bytes_read, false);
+        return bytes_read;
     }
 
     void log_data(byte[] data, int len, boolean is_tx) {

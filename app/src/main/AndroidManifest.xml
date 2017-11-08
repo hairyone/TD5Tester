@@ -10,8 +10,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivityJ2xx"
-            android:screenOrientation="portrait"
+            android:name=".MainActivityFTDriver"
+            android:screenOrientation="landscape"
             android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

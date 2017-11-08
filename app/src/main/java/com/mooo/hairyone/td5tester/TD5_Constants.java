@@ -4,6 +4,6 @@ public class TD5_Constants {
 
     public static final int BUFFER_SIZE = 512;
     public static final boolean CAUTIOUS_READ = false;
-    public static final int READ_RESPONSE_TIMEOUT = 500;
+    public static final int READ_RESPONSE_TIMEOUT = 100;
 
 }

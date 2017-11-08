@@ -88,7 +88,8 @@ public class MainActivityFTDriver extends AppCompatActivity {
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                    fast_init();
+                        openDevice();
+                        fast_init();
                     }
                 });
                 thread.start();
@@ -114,12 +115,19 @@ public class MainActivityFTDriver extends AppCompatActivity {
         Log.w("TD5Tester", text);
     }
 
+    public void openDevice() {
+        if (!ft_driver.isConnected()) {
+            ft_driver.begin(10400);
+            log_msg(String.format("ft_driver=%s", ft_driver.getDevice().getProductName()));
+        }
+    }
+
     public void fast_init() {
         byte[] HI = new byte[]{(byte) 0x01};
         byte[] LO = new byte[]{(byte) 0x00};
 
         try {
-            if (ft_driver.begin(10400)) {
+            if (ft_driver != null && ft_driver.isConnected()) {
                 ft_driver.setSerialPropertyDataBit(FTDriver.FTDI_SET_DATA_BITS_8, FTDriver.CH_A);
                 ft_driver.setSerialPropertyStopBits(FTDriver.FTDI_SET_DATA_STOP_BITS_1, FTDriver.CH_A);
                 ft_driver.setSerialPropertyParity(FTDriver.FTDI_SET_DATA_PARITY_EVEN, FTDriver.CH_A);
@@ -222,10 +230,10 @@ public class MainActivityFTDriver extends AppCompatActivity {
         // FTDriver specifies 0 (infinite) as the UsbDeviceConnection.bulkTransfer() timeout
         // unless the device is CDC in which case 100ms is used
 
-        int len = ft_driver.read(response);
-        log_msg(String.format("len=%d", len));
-        log_data(response, len, false);
-        return len;
+        int bytes_read = ft_driver.read(response);
+        log_msg(String.format("bytes_read=%d", bytes_read));
+        log_data(response, bytes_read, false);
+        return bytes_read;
     }
 
     void log_data(byte[] data, int len, boolean is_tx) {

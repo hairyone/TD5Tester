@@ -170,6 +170,10 @@ public class FTDriver {
         }
     }
 
+    public UsbDevice getDevice() {
+        return mDevice;
+    }
+
     // Open an FTDI USB Device
     public boolean begin(int baudrate) {
         for (UsbDevice device : mManager.getDeviceList().values()) {
