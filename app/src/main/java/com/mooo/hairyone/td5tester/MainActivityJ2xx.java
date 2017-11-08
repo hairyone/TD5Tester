@@ -89,7 +89,7 @@ public class MainActivityJ2xx extends AppCompatActivity {
         try {
             d2xx_manager = D2xxManager.getInstance(this);
         } catch (Exception ex) {
-            log_msg(String.format("ERR1: %s", ex.getMessage()));
+            log_msg(ex.toString());
         }
         td5_requests = new TD5_Requests();
     }
