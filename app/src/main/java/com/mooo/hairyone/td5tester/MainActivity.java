@@ -155,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
             while (deviceIterator.hasNext()) {
                 UsbDevice usbDevice = deviceIterator.next();
-                if (usbDevice.getVendorId() == TD5_Constants.FTDI_VENDOR_ID && usbDevice.getProductId() == TD5_Constants.FTDI_PRODUCT_ID) {
+                if (usbDevice.getVendorId() == FTDI.VENDOR_ID && usbDevice.getProductId() == FTDI.PRODUCT_ID) {
                     mUsbDevice = usbDevice;
                 }
             }
@@ -361,7 +361,7 @@ public class MainActivity extends AppCompatActivity {
         data[len - 1] = checksum(data, len - 1);
         log_msg(name);
         log_data(data, len, true);
-        int rc = mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, data, len, TD5_Constants.FTDI_WRITE_TIMEOUT);
+        int rc = mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, data, len, FTDI.WRITE_TIMEOUT);
     }
 
     byte checksum(byte[] data, int len) {
@@ -408,7 +408,7 @@ public class MainActivity extends AppCompatActivity {
         // data is sent back to the PC the timer is reset. If it times-out then the chip will send
         // back the 2 status bytes and any data that is held in the buffer.
 
-        int bytes_read = mUsbDeviceConnection.bulkTransfer(mUsbEndpointIn, buf, TD5_Constants.BUFFER_SIZE, TD5_Constants.FTDI_READ_TIMEOUT);
+        int bytes_read = mUsbDeviceConnection.bulkTransfer(mUsbEndpointIn, buf, TD5_Constants.BUFFER_SIZE, FTDI.READ_TIMEOUT);
         // log_msg(String.format("bytes_read=%d", bytes_read));
         log_data(buf, bytes_read, false);
 
