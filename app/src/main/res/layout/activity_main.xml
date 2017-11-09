@@ -25,6 +25,22 @@
             android:text="Connect" />
 
         <Button
+            android:id="@+id/btDisconnect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Disconnect" />
+
+
+
+    <Button
+            android:id="@+id/btFastInit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Fast Init" />
+
+        <Button
             android:id="@+id/btClear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

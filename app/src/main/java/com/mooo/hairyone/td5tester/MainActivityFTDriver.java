@@ -27,6 +27,8 @@ public class MainActivityFTDriver extends AppCompatActivity {
 
     TextView tvInfo;
     Button btConnect;
+    Button btDisconnect;
+    Button btFastInit;
     Button btClear;
 
     byte[] response = new byte[TD5_Constants.BUFFER_SIZE];
@@ -145,6 +147,8 @@ public class MainActivityFTDriver extends AppCompatActivity {
                     td5_requests.request.get(TD5_Pids.Pid.KEY_RETURN).request[4] = (byte) (key & 0xFF);
                     connected = get_pid(TD5_Pids.Pid.KEY_RETURN);
                 }
+            } else {
+                log_msg("not connected");
             }
         } catch (Exception ex) {
             log_msg(ex.toString());
