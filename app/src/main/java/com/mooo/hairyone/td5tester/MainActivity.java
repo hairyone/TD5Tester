@@ -20,6 +20,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.HashMap;
@@ -102,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
         btDisconnect= (Button) findViewById(R.id.btDisconnect);
         btFastInit = (Button) findViewById(R.id.btFastInit);
         btClear = (Button) findViewById(R.id.btClear);
+
         tvInfo = (TextView) findViewById(R.id.tvInfo);
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
         tvInfo.setBackgroundColor(Color.parseColor("#FFFFA5"));
@@ -194,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
             return result;
         }
 
-        log_msg(String.format("mUsbDevice=%s", mUsbDevice.toString()));
+        log_msg(String.format("connected to %s", mUsbDevice.getProductName()));
 
         log_msg(String.format("requesting permission for %s", mUsbDevice.getProductName()));
         manager.requestPermission(mUsbDevice, mPermissionIntent);
@@ -345,12 +347,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void fast_init() {
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, false));
         byte[] HI = new byte[]{(byte) 0x01};
         byte[] LO = new byte[]{(byte) 0x00};
-
-        if (!connected()) {
-            return;
-        }
 
         try {
             log_msg("FAST_INIT");
@@ -374,7 +373,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             log_msg(ex.toString());
         }
-
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, true));
     }
 
     int generate_key(int seedin) {
