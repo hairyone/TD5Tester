@@ -22,7 +22,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -35,27 +34,11 @@ public class MainActivity extends AppCompatActivity {
     Button btFastInit;
     Button btClear;
 
-    byte[] response = new byte[TD5_Constants.BUFFER_SIZE];
-    boolean connected = false;
-    TD5_Requests td5_requests = null;
-    private static final int LOG_MSG = 1;
-    private static final int SET_CONNECTION_STATE = 2;
+    byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
+    boolean mHaveUsbPermission = false;
+    boolean mFastInitCompleted = false;
+    Requests requests = null;
 
-    private final Handler myHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case (LOG_MSG):
-                    log_append((String) msg.obj);
-                    break;
-                case (SET_CONNECTION_STATE):
-                    connected = (boolean) msg.obj;
-                    break;
-            }
-        }
-    };
-
-    private static final String ACTION_USB_PERMISSION = "com.mooo.hairyone.td5tester.USB_PERMISSION";
     PendingIntent mPermissionIntent;
     UsbDevice mUsbDevice = null;
     UsbInterface mUsbInterface = null;
@@ -63,18 +46,47 @@ public class MainActivity extends AppCompatActivity {
     UsbEndpoint mUsbEndpointOut = null;
     UsbDeviceConnection mUsbDeviceConnection = null;
 
+    // Allow other threads to update the UI
+    private final Handler myHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case (Consts.UI_HANDLER_LOG_MSG):
+                    log_append((String) msg.obj);
+                    break;
+                case (Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE):
+                    btConnect.setEnabled((boolean) msg.obj);
+                    break;
+                case (Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE):
+                    btDisconnect.setEnabled((boolean) msg.obj);
+                    break;
+                case (Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE):
+                    btFastInit.setEnabled((boolean) msg.obj);
+                    break;
+            }
+        }
+    };
+
     private final BroadcastReceiver mUsbDeviceReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            if (Consts.ACTION_USB_PERMISSION.equals(action)) {
+                if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                    UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    log_msg(String.format("permission granted for %s", usbDevice.getProductName()));
+                    mHaveUsbPermission = true;
+                }
+            }
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 mUsbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                log_msg(String.format("usb_attached=%s", mUsbDevice.getDeviceName()));
+                log_msg(String.format("usb_attached=%s", mUsbDevice.getProductName()));
                 // usb_open();
-            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            }
+            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                log_msg(String.format("usb_detached=%s", usbDevice.getDeviceName()));
-                if (usbDevice != null && usbDevice == mUsbDevice) {
+                log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
+                if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
                     usb_close();
                 }
             }
@@ -94,10 +106,13 @@ public class MainActivity extends AppCompatActivity {
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
         tvInfo.setBackgroundColor(Color.parseColor("#FFFFA5"));
 
-        td5_requests = new TD5_Requests();
+        btDisconnect.setEnabled(false);
+        btFastInit.setEnabled(false);
 
-        mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        requests = new Requests();
+
+        mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(Consts.ACTION_USB_PERMISSION), 0);
+        IntentFilter filter = new IntentFilter(Consts.ACTION_USB_PERMISSION);
         registerReceiver(mUsbDeviceReceiver, filter);
 
         registerReceiver(mUsbDeviceReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
@@ -135,129 +150,151 @@ public class MainActivity extends AppCompatActivity {
                 log_clear();
             }
         });
+
         btDisconnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                usb_close();
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        usb_close();
+                    }
+                });
+                thread.start();
             }
         });
 
     }
 
-    private void usb_open(){
+    private boolean usb_open(){
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, false));
+
+        boolean result = false;
+
+        mFastInitCompleted = false;
+        mUsbDevice = null;
         mUsbInterface = null;
         mUsbEndpointIn = null;
         mUsbEndpointOut = null;
-
-        if (mUsbDevice == null){
-            UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-            HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
-            Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
-            while (deviceIterator.hasNext()) {
-                UsbDevice usbDevice = deviceIterator.next();
-                if (usbDevice.getVendorId() == FTDI.VENDOR_ID && usbDevice.getProductId() == FTDI.PRODUCT_ID) {
-                    mUsbDevice = usbDevice;
-                }
-            }
-        }
-
-        if (mUsbDevice == null){
-            log_msg("FTDI device not found");
-        } else {
-            log_msg(String.format("mUsbDevice=%s", mUsbDevice.toString()));
-            for (int i=0; i < mUsbDevice.getInterfaceCount(); i++){
-                UsbInterface usbInterface = mUsbDevice.getInterface(i);
-                UsbEndpoint usbEndpointOut = null;
-                UsbEndpoint usbEndpointIn = null;
-
-                int endpointCount = usbInterface.getEndpointCount();
-                if (endpointCount >= 2) {
-                    for(int j=0; j < endpointCount; j++){
-                        if (usbInterface.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK && usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_OUT) {
-                            usbEndpointOut = usbInterface.getEndpoint(j);
-                        }
-                        if (usbInterface.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK && usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_IN) {
-                            usbEndpointIn = usbInterface.getEndpoint(j);
-                        }
-                    }
-                    if (usbEndpointOut != null && usbEndpointIn != null){
-                        mUsbInterface = usbInterface;
-                        mUsbEndpointOut = usbEndpointOut;
-                        mUsbEndpointIn = usbEndpointIn;
-                    }
-                }
-            }
-
-            if( mUsbInterface == null){
-                log_msg("no suitable interface found");
-            } else {
-                log_msg(String.format("mUsbInterface=%s", mUsbInterface.toString()));
-            }
-        }
-
-        if (mUsbInterface != null){
-            open_uart();
-        }
-    }
-
-    private boolean open_uart(){
-        boolean success = false;
+        mUsbDeviceConnection = null;
 
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        Boolean has_permission = manager.hasPermission(mUsbDevice);
-
-        if (!has_permission) {
-            manager.requestPermission(mUsbDevice, mPermissionIntent);
-            has_permission = manager.hasPermission(mUsbDevice);
-        }
-
-        log_msg(String.format("has_permission=%b", has_permission));
-
-        if (has_permission) {
-            mUsbDeviceConnection = manager.openDevice(mUsbDevice);
-            if (mUsbDeviceConnection != null) {
-                mUsbDeviceConnection.claimInterface(mUsbInterface, true);
-                control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_SIO,         FTDI.CH_A);
-                control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_PURGE_RX,    FTDI.CH_A);
-                control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_PURGE_TX,    FTDI.CH_A);
-                control_transfer(FTDI.SIO_SET_FLOW_CTRL, FTDI.SIO_DISABLE_FLOW_CTRL, FTDI.CH_A);
-                control_transfer(FTDI.SIO_SET_DATA,      FTDI.LINE_8N1,              FTDI.CH_A);
-                control_transfer(FTDI.SIO_SET_BAUDRATE,  FTDI.BAUDRATE_10400);
-                success = true;
+        HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
+        Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+        while (deviceIterator.hasNext()) {
+            UsbDevice usbDevice = deviceIterator.next();
+            if (usbDevice.getVendorId() == FTDI.VENDOR_ID && usbDevice.getProductId() == FTDI.PRODUCT_ID) {
+                mUsbDevice = usbDevice;
             }
         }
 
-        return success;
+        if (mUsbDevice == null) {
+            log_msg("FTDI device not found");
+            myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, true));
+            return result;
+        }
+
+        log_msg(String.format("mUsbDevice=%s", mUsbDevice.toString()));
+
+        log_msg(String.format("requesting permission for %s", mUsbDevice.getProductName()));
+        manager.requestPermission(mUsbDevice, mPermissionIntent);
+
+        // FIXME: The rest of this code should be fired in another thread when permission is granted
+        int cnt = 0;
+        while (!mHaveUsbPermission && cnt <= 5) {
+            log_msg(String.format("waiting for permission for %s", mUsbDevice.getProductName()));
+            try {
+                Thread.sleep(1000);
+            } catch (Exception ex) {
+                log_msg(ex.toString());
+                break;
+            }
+            cnt++;
+        }
+        if (!mHaveUsbPermission) {
+            myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, true));
+            return result;
+        }
+
+        for (int i=0; i < mUsbDevice.getInterfaceCount(); i++) {
+            UsbInterface usbInterface = mUsbDevice.getInterface(i);
+            UsbEndpoint usbEndpointOut = null;
+            UsbEndpoint usbEndpointIn = null;
+
+            int endpointCount = usbInterface.getEndpointCount();
+            if (endpointCount >= 2) {
+                for (int j = 0; j < endpointCount; j++) {
+                    if (usbInterface.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK && usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_OUT) {
+                        usbEndpointOut = usbInterface.getEndpoint(j);
+                    }
+                    if (usbInterface.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK && usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_IN) {
+                        usbEndpointIn = usbInterface.getEndpoint(j);
+                    }
+                }
+                if (usbEndpointOut != null && usbEndpointIn != null) {
+                    mUsbInterface = usbInterface;
+                    mUsbEndpointOut = usbEndpointOut;
+                    mUsbEndpointIn = usbEndpointIn;
+                }
+            }
+        }
+
+        if( mUsbInterface == null) {
+            log_msg("no suitable interface found");
+            return result;
+        }
+
+        log_msg(String.format("mUsbInterface=%s", mUsbInterface.toString()));
+
+        mUsbDeviceConnection = manager.openDevice(mUsbDevice);
+        if (mUsbDeviceConnection != null) {
+            mUsbDeviceConnection.claimInterface(mUsbInterface, true);
+            control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_SIO,         FTDI.CH_A);
+            control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_PURGE_RX,    FTDI.CH_A);
+            control_transfer(FTDI.SIO_RESET,         FTDI.SIO_RESET_PURGE_TX,    FTDI.CH_A);
+            control_transfer(FTDI.SIO_SET_FLOW_CTRL, FTDI.SIO_DISABLE_FLOW_CTRL, FTDI.CH_A);
+            control_transfer(FTDI.SIO_SET_DATA,      FTDI.LINE_8N1,              FTDI.CH_A);
+            control_transfer(FTDI.SIO_SET_BAUDRATE,  FTDI.BAUDRATE_10400);
+            result = true;
+        }
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE, true));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, true));
+
+        return result;
+
     }
 
     public void log_msg(String msg) {
-        myHandler.sendMessage(Message.obtain(myHandler, LOG_MSG, msg));
-    }
-
-    public void set_connection_state(boolean connected) {
-        myHandler.sendMessage(Message.obtain(myHandler, LOG_MSG, connected));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_LOG_MSG, msg));
     }
 
     public void usb_close() {
-        if (mUsbDeviceConnection != null) {
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, false));
+        if (connected()) {
             if (mUsbInterface != null) {
                 mUsbDeviceConnection.releaseInterface(mUsbInterface);
                 mUsbInterface = null;
             }
             mUsbDeviceConnection.close();
             mUsbDeviceConnection = null;
-        } else {
-            log_msg("not connected");
         }
+        mFastInitCompleted = false;
+        mHaveUsbPermission = false;
         mUsbDevice = null;
-        mUsbInterface = null;
         mUsbEndpointIn = null;
         mUsbEndpointOut = null;
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, true));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, false));
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        // TODO: Can a thread be used here ?
         usb_close();
     }
 
@@ -273,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
     public int control_transfer(int request, int value) {
         return control_transfer(request, value, 0);
     }
+
     public int control_transfer(int request, int value, int index) {
         int rc = mUsbDeviceConnection.controlTransfer(FTDI.REQ_OUT, request, value, index, null, 0x00, FTDI.WRITE_TIMEOUT);
         if (rc < 0) {
@@ -281,7 +319,15 @@ public class MainActivity extends AppCompatActivity {
         return rc;
     }
 
-    public int bulk_transfer(byte[] data, int len) {
+    public int bulk_transfer_read(byte[] data, int len) {
+        int rc = mUsbDeviceConnection.bulkTransfer(mUsbEndpointIn, data, len, FTDI.READ_TIMEOUT);
+        if (rc < 0) {
+            Log.e(TAG, String.format("data=%s, len=%d, rc=%d", data, len, rc));
+        }
+        return rc;
+    }
+
+    public int bulk_transfer_write(byte[] data, int len) {
         int rc = mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, data, len, FTDI.WRITE_TIMEOUT);
         if (rc < 0) {
             Log.e(TAG, String.format("data=%s, len=%d, rc=%d", data, len, rc));
@@ -289,34 +335,44 @@ public class MainActivity extends AppCompatActivity {
         return rc;
     }
 
+    public boolean connected() {
+        boolean result = true;
+        if (mUsbDeviceConnection == null) {
+            log_msg("not connected to device");
+            result = false;
+        }
+        return result;
+    }
+
     public void fast_init() {
         byte[] HI = new byte[]{(byte) 0x01};
         byte[] LO = new byte[]{(byte) 0x00};
 
-        if (mUsbDeviceConnection != null) {
-            try {
-                log_msg("FAST_INIT");
-                control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_ON);
-                mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, HI, 1, 500); Thread.sleep(500);
-                mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, LO, 1, 25); Thread.sleep(25);
-                mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, HI, 1, 25); Thread.sleep(25);
-                control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_OFF);
+        if (!connected()) {
+            return;
+        }
 
-                control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_RX, FTDI.CH_A);
-                control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_TX, FTDI.CH_A);
+        try {
+            log_msg("FAST_INIT");
+            control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_ON);
+            bulk_transfer_write(HI, 1); Thread.sleep(500);
+            bulk_transfer_write(LO, 1); Thread.sleep(25);
+            bulk_transfer_write(HI, 1); Thread.sleep(25);
+            control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_OFF);
 
-                if (get_pid(TD5_Pids.Pid.INIT_FRAME) && get_pid(TD5_Pids.Pid.START_DIAGNOSTICS) && get_pid(TD5_Pids.Pid.REQUEST_SEED)) {
-                    int seed = (short) (response[3] << 8 | response[4]);
-                    int key = generate_key(seed);
-                    td5_requests.request.get(TD5_Pids.Pid.KEY_RETURN).request[3] = (byte) (key >> 8);
-                    td5_requests.request.get(TD5_Pids.Pid.KEY_RETURN).request[4] = (byte) (key & 0xFF);
-                    connected = get_pid(TD5_Pids.Pid.KEY_RETURN);
-                }
-            } catch (Exception ex) {
-                log_msg(ex.toString());
+            control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_RX, FTDI.CH_A);
+            control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_TX, FTDI.CH_A);
+            control_transfer(FTDI.SIO_SET_LATENCY_TIMER, FTDI.LATENCY_MAX);
+
+            if (get_pid(Requests.RequestPidEnum.INIT_FRAME) && get_pid(Requests.RequestPidEnum.START_DIAGNOSTICS) && get_pid(Requests.RequestPidEnum.REQUEST_SEED)) {
+                int seed = (short) (mReadBuffer[3] << 8 | mReadBuffer[4]);
+                int key = generate_key(seed);
+                requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) (key >> 8);
+                requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
+                mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN);
             }
-        } else {
-            log_msg("not connected");
+        } catch (Exception ex) {
+            log_msg(ex.toString());
         }
 
     }
@@ -337,15 +393,15 @@ public class MainActivity extends AppCompatActivity {
         return seed;
     }
 
-    boolean get_pid(TD5_Pids.Pid pid) {
+    boolean get_pid(Requests.RequestPidEnum pid) {
         boolean result = false;
         send(pid);
         int len = readResponse(pid);
         if (len > 1) {
-            byte cs1 = response[len - 1];
-            byte cs2 = checksum(response, len - 1);
+            byte cs1 = mReadBuffer[len - 1];
+            byte cs2 = checksum(mReadBuffer, len - 1);
             if (cs1 == cs2) {
-                if (response[1] != 0x7F) {
+                if (mReadBuffer[1] != 0x7F) {
                     result = true;
                 }
             }
@@ -353,15 +409,15 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    void send(TD5_Pids.Pid pid) {
-        int len = td5_requests.request.get(pid).request.length;
-        byte[] data = td5_requests.request.get(pid).request;
-        String name = td5_requests.request.get(pid).name;
+    void send(Requests.RequestPidEnum pid) {
+        int len = requests.request.get(pid).request.length;
+        byte[] data = requests.request.get(pid).request;
+        String name = requests.request.get(pid).name;
 
         data[len - 1] = checksum(data, len - 1);
         log_msg(name);
         log_data(data, len, true);
-        int rc = mUsbDeviceConnection.bulkTransfer(mUsbEndpointOut, data, len, FTDI.WRITE_TIMEOUT);
+        bulk_transfer_write(data, len);
     }
 
     byte checksum(byte[] data, int len) {
@@ -384,50 +440,69 @@ public class MainActivity extends AppCompatActivity {
         return String.format("%8s", Integer.toBinaryString(value & 0xFF)).replace(' ', '0');
     }
 
-    int readResponse(TD5_Pids.Pid pid) {
-        byte[] buf = new byte[TD5_Constants.BUFFER_SIZE];
-        // We are lucky that all the request and response messages are less than the 64 byte
-        // max packet size of the FT232R. So we don't have to chunk the data for sending and
-        // reading.
+    int readResponse(Requests.RequestPidEnum pid) {
+        // Create a temporary buffer to hold the mReadBuffer, note that:
+        //  1.  The original request is echoed in the mReadBuffer.
+        //  2.  In every packet of 64 bytes returned by the FTDI chip there are 2 modem status bytes
+        //      at the start of each packet.
 
-        // NTOTE: http://www.ftdichip.com/Support/Knowledgebase/index.html?an232b_04smalldataend.htm
-        // When transferring data from an FTDI USB-Serial or USB-FIFO IC device to the PC, the device
-        // will send the data given one of the following conditions:
-        //
-        // 1.	The buffer is full (64 bytes made up of 2 status bytes and 62 user bytes).
-        //
-        // 2.	One of the RS232 status lines has changed (USB-Serial chips only). A change of level
-        // (high or low) on CTS# / DSR# / DCD# or RI# will cause it to pass back the current buffer
-        // even though it may be empty or have less than 64 bytes in it.
-        //
-        // 3.	An event character had been enabled and was detected in the incoming data stream.
-        //
-        // 4.	A timer integral to the chip has timed out. There is a timer (latency timer) in the
-        // FT232R, FT245R, FT2232C, FT232BM and FT245BM chips that measures the time since data was
-        // last sent to the PC. The default value of the timer is set to 16 milliseconds. Every time
-        // data is sent back to the PC the timer is reset. If it times-out then the chip will send
-        // back the 2 status bytes and any data that is held in the buffer.
+        int request_len = requests.request.get(pid).request.length;
+        int response_len = requests.request.get(pid).response_len;
+        int expected_response_len = request_len + response_len;
+        int max_packet_size = mUsbEndpointIn.getMaxPacketSize();
+        int modem_status_len = 2;
+        final int modem_status_bytes_len = (
+                (int) Math.ceil(
+                        ((double) expected_response_len) / ((double) (max_packet_size - modem_status_len)))
+        ) * modem_status_len;
 
-        int bytes_read = mUsbDeviceConnection.bulkTransfer(mUsbEndpointIn, buf, TD5_Constants.BUFFER_SIZE, FTDI.READ_TIMEOUT);
-        // log_msg(String.format("bytes_read=%d", bytes_read));
+        byte[] buf = new byte[expected_response_len + modem_status_bytes_len];
+
+        int bytes_read = bulk_transfer_read(buf, expected_response_len + modem_status_bytes_len);
         log_data(buf, bytes_read, false);
 
-        // first two bytes are the modem status
-        //if ((buf[1] & FTDI.ERROR_BIT_1) > 0) {
-            // String msg = String.format("FTDI error: %02X:%02X", buf[0], buf[1]);
+        if (Consts.LOG_EVERY_MODEM_STATUS || (buf[1] & FTDI.ERROR_BIT_1) > 0) {
             String msg = String.format("modem_status=%s:%s", integer_to_binary(buf[0]), integer_to_binary(buf[1]));
-        log_msg(msg);
-        //}
-
-        if (buf.length > 2) {
-            response = Arrays.copyOfRange(buf, 2, bytes_read);
+            log_msg(msg);
         }
 
-        return bytes_read - 2;
+        if (buf.length < 2) {
+            log_msg("malformed mReadBuffer");
+            return 0;
+        }
+
+        // Remove the modem status bytes from each packet in the buf
+        int data_len = filter_modem_status_bytes(buf, buf, Math.min(buf.length, bytes_read), max_packet_size, modem_status_len);
+        if (data_len > 0) {
+            // Remove the request bytes from the start
+            System.arraycopy(buf, request_len, mReadBuffer, 0, data_len - request_len);
+            data_len -= response_len;
+        }
+
+        // The cleaned up mReadBuffer
+        log_data(mReadBuffer, data_len, false);
+        return data_len;
     }
 
     void log_data(byte[] data, int len, boolean is_tx) {
         log_msg(String.format("%s %s", is_tx ? ">>" : "<<", byte_array_to_hex(data, len)));
     }
+
+    private int filter_modem_status_bytes(byte[] src, byte[] dest, int src_len, int max_packet_len, int modem_status_len) {
+        int src_offset = 0;
+        int dst_offset = 0;
+        src_offset = src_offset + modem_status_len;
+        while (src_offset < src_len) {
+            int len = ((src_len - src_offset) >= (max_packet_len - modem_status_len)) ?
+                    (max_packet_len - modem_status_len) :
+                    (src_len - src_offset);
+            System.arraycopy(src, src_offset, dest, dst_offset, len);
+            src_offset = src_offset + len + modem_status_len;
+            dst_offset = dst_offset + len;
+        }
+        return dst_offset;
+    }
+
+
 
 }

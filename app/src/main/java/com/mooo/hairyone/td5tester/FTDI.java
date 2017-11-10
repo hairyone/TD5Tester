@@ -1,16 +1,34 @@
 package com.mooo.hairyone.td5tester;
 
+import android.hardware.usb.UsbConstants;
+
 public class FTDI {
-    public static final int VENDOR_ID   = 0x0403;
-    public static final int PRODUCT_ID  = 0x6001;
 
-    public static final int WRITE_TIMEOUT   = 5000;
-    public static final int READ_TIMEOUT    = 5000;
+    // The only chip I am testing with is the FT232RL
+    public static final int VENDOR_ID           = 0x0403;
+    public static final int PRODUCT_ID          = 0x6001;
 
-    public static final int CH_A = 1;
+    public static final int WRITE_TIMEOUT       = 5000;
+    public static final int READ_TIMEOUT        = 5000;
 
-    public static final int REQ_OUT             = 0x0040;   // Control Transfer Out
+    public static final int BAUDRATE_10400      = 0x4120;
 
+    public static final int USB_TYPE_STANDARD   = 0x00 << 5;
+    public static final int USB_TYPE_CLASS      = 0x00 << 5;
+    public static final int USB_TYPE_VENDOR     = 0x00 << 5;
+    public static final int USB_TYPE_RESERVED   = 0x00 << 5;
+
+    public static final int USB_RECIP_DEVICE    = 0x00;
+    public static final int USB_RECIP_INTERFACE = 0x01;
+    public static final int USB_RECIP_ENDPOINT  = 0x02;
+    public static final int USB_RECIP_OTHER     = 0x03;
+
+    public static final int USB_ENDPOINT_IN     = 0x80;
+    public static final int USB_ENDPOINT_OUT    = 0x00;
+
+    public static final int CH_A                = 1;        // FT232R just has a single interface
+    public static final int REQ_OUT             = UsbConstants.USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT; // 0x0040;   // Control Transfer Out
+    public static final int REQ_IN              = UsbConstants.USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN;
 
     // Requests
     public static final int SIO_RESET               = 0;    // Reset the port
@@ -27,9 +45,9 @@ public class FTDI {
     public static final int SIO_READ_PINS           = 12;   // Read GPIO pin value
 
     // Reset commands
-    public static final int SIO_RESET_SIO       = 0x0000;    // Reset device
-    public static final int SIO_RESET_PURGE_RX  = 0x0001;    // Drain RX buffer
-    public static final int SIO_RESET_PURGE_TX  = 0x0002;    // Drain TX buffer
+    public static final int SIO_RESET_SIO           = 0;    // Reset device
+    public static final int SIO_RESET_PURGE_RX      = 1;    // Drain RX buffer
+    public static final int SIO_RESET_PURGE_TX      = 2;    // Drain TX buffer
 
     // Flow control
     public static final int SIO_DISABLE_FLOW_CTRL   = 0x0;
@@ -65,8 +83,6 @@ public class FTDI {
 
     public static final int LINE_8N1        = (((BITS_8 & 0x0F) | PARITY_NONE << 8) | STOP_BIT_1 << 11);
 
-    public static final int BAUDRATE_10400  = 0x4120;
-
 
     // Bit bang
     public static final int BITMODE_RESET       = 0x00; // switch off bitbang mode
@@ -100,4 +116,28 @@ public class FTDI {
     public static final int MODEM_THRE  = (1 << 13); // Transmitter holding register
     public static final int MODEM_TEMT  = (1 << 14); // Transmitter empty
     public static final int MODEM_RCVE  = (1 << 15); // Error in RCVR FIFO
+
+
+    /*
+         ==== BIT 0 ====    ==== BIT 1 ====
+         0 0 0 0 0 0 0 0  | 1 0 0 0 1 1 1 0   Error bits 0x00 0x8E
+
+         0 0 0 0 0 0 0 0  | 0 0 0 0 0 0 0 0
+                 | | | |    | | | | | | | +-- RX FIFO error
+                 | | | |    | | | | | | +---- TX empty
+                 | | | |    | | | | | +------ TX holding
+                 | | | |    | | | | +-------- Break interrupt
+                 | | | |    | | | +---------- Framing error
+                 | | | |    | | +------------ Parity error
+                 | | | |    | +-------------- Overrun error
+                 | | | |    +---------------- Data ready
+                 | | | +--------------------- Carrier detect
+                 | | +----------------------- Ring indicator
+                 | +------------------------- Data set ready
+                 +=========================== Clear to send
+    */
+
+    // Latency
+    public static final int LATENCY_MIN = 12;
+    public static final int LATENCY_MAX = 255;
 }
