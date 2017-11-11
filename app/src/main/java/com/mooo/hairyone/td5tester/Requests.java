@@ -13,7 +13,6 @@ public class Requests {
         GET_INPUTS, GET_FUEL_DEMAND
     };
 
-
     class Request {
         byte response_len;
         String name;
@@ -30,7 +29,7 @@ public class Requests {
 
     public Requests() {
 
-        request.put(RequestPidEnum.INIT_FRAME,           new Request((byte)  7, "INIT_FRAME",        new byte[] { (byte) 0x81, (byte) 0x13, (byte) 0xF7, (byte) 0x81, (byte) 0x00 }));
+        request.put(RequestPidEnum.INIT_FRAME,           new Request((byte)  5, "INIT_FRAME",        new byte[] { (byte) 0x81, (byte) 0x13, (byte) 0xF7, (byte) 0x81, (byte) 0x00 }));
         request.put(RequestPidEnum.START_DIAGNOSTICS,    new Request((byte)  3, "START_DIAGNOSTICS", new byte[] { (byte) 0x02, (byte) 0x10, (byte) 0xA0, (byte) 0x00 }));
         request.put(RequestPidEnum.REQUEST_SEED,         new Request((byte)  6, "REQUEST_SEED",      new byte[] { (byte) 0x02, (byte) 0x27, (byte) 0x01, (byte) 0x00 }));
         request.put(RequestPidEnum.KEY_RETURN,           new Request((byte)  4, "KEY_RETURN",        new byte[] { (byte) 0x04, (byte) 0x27, (byte) 0x02, (byte) 0x00, (byte) 0x00, (byte) 0x00 }));

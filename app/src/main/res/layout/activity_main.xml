@@ -13,43 +13,50 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="1sp"
         android:background="#2892A6"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="1sp">
 
-        <Button
+        <ImageButton
             android:id="@+id/btConnect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Connect" />
+            app:srcCompat="@drawable/connected" />
 
-        <Button
+        <ImageButton
             android:id="@+id/btDisconnect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Disconnect" />
+            app:srcCompat="@drawable/disconnected" />
 
-        <Button
+        <ImageButton
             android:id="@+id/btFastInit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Fast Init" />
+            app:srcCompat="@drawable/key" />
 
-        <Button
+        <ImageButton
+            android:id="@+id/btDashboard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:srcCompat="@drawable/dashboard" />
+
+        <ImageButton
             android:id="@+id/btClear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Clear" />
+            app:srcCompat="@drawable/delete_document" />
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="0sp"
         android:padding="1sp"
         android:background="#3AAAAF"
         android:orientation="horizontal"
@@ -57,13 +64,12 @@
 
         <TextView
             android:id="@+id/tvInfo"
-            android:layout_width="0dp"
+            android:layout_width="0sp"
             android:layout_height="match_parent"
-            android:layout_margin="10dp"
+            android:layout_margin="1sp"
             android:layout_weight="1"
             android:background="#FFFFA5"
             android:fontFamily="serif-monospace"
-            android:gravity="bottom"
             android:text="" />
 
     </LinearLayout>

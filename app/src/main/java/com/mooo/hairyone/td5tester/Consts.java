@@ -9,10 +9,11 @@ public class Consts {
     public static final String ACTION_USB_PERMISSION = "com.mooo.hairyone.td5tester.USB_PERMISSION";
 
     // Message types that can be sent to the UI thread from other threads
-    public static final int UI_HANDLER_LOG_MSG = 1;
-    public static final int UI_HANDLER_SET_CONNECT_BUTTON_STATE = 2;
-    public static final int UI_HANDLER_SET_DISCONNECT_BUTTON_STATE = 3;
-    public static final int UI_HANDLER_SET_FASTINIT_BUTTON_STATE = 4;
+    public static final int UI_HANDLER_LOG_MSG                      = 1;
+    public static final int UI_HANDLER_SET_CONNECT_BUTTON_STATE     = 2;
+    public static final int UI_HANDLER_SET_DISCONNECT_BUTTON_STATE  = 3;
+    public static final int UI_HANDLER_SET_FASTINIT_BUTTON_STATE    = 4;
+    public static final int UI_HANDLER_SET_DASHBOARD_BUTTON_STATE   = 5;
 
     public static final int RESPONSE_BUFFER_SIZE    = 512;
     public static final int READ_RESPONSE_TIMEOUT   = 100;

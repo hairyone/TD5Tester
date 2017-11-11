@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -20,20 +21,26 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Iterator;
 
+/*
+    icons from here: https://icons8.com/icon/set/unlock/androidL
+ */
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     TextView tvInfo;
-    Button btConnect;
-    Button btDisconnect;
-    Button btFastInit;
-    Button btClear;
+    ImageButton btConnect;
+    ImageButton btDisconnect;
+    ImageButton btFastInit;
+    ImageButton btClear;
+    ImageButton btDashboard;
 
     byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
     boolean mHaveUsbPermission = false;
@@ -56,13 +63,16 @@ public class MainActivity extends AppCompatActivity {
                     log_append((String) msg.obj);
                     break;
                 case (Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE):
-                    btConnect.setEnabled((boolean) msg.obj);
+                    Util.setImageButtonState(btConnect, (boolean) msg.obj);
                     break;
                 case (Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE):
-                    btDisconnect.setEnabled((boolean) msg.obj);
+                    Util.setImageButtonState(btDisconnect, (boolean) msg.obj);
                     break;
-                case (Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE):
-                    btFastInit.setEnabled((boolean) msg.obj);
+                case (Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE ):
+                    Util.setImageButtonState(btFastInit, (boolean) msg.obj);
+                    break;
+                case (Consts.UI_HANDLER_SET_DASHBOARD_BUTTON_STATE ):
+                    Util.setImageButtonState(btDashboard, (boolean) msg.obj);
                     break;
             }
         }
@@ -99,17 +109,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btConnect = (Button) findViewById(R.id.btConnect);
-        btDisconnect= (Button) findViewById(R.id.btDisconnect);
-        btFastInit = (Button) findViewById(R.id.btFastInit);
-        btClear = (Button) findViewById(R.id.btClear);
+        btConnect = (ImageButton) findViewById(R.id.btConnect);
+        btDisconnect= (ImageButton) findViewById(R.id.btDisconnect);
+        btFastInit = (ImageButton) findViewById(R.id.btFastInit);
+        btClear = (ImageButton) findViewById(R.id.btClear);
+        btDashboard = (ImageButton) findViewById(R.id.btDashboard);
 
         tvInfo = (TextView) findViewById(R.id.tvInfo);
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
         tvInfo.setBackgroundColor(Color.parseColor("#FFFFA5"));
 
-        btDisconnect.setEnabled(false);
-        btFastInit.setEnabled(false);
+        Util.setImageButtonState(btDisconnect, false);
+        Util.setImageButtonState(btFastInit, false);
+        Util.setImageButtonState(btDashboard, false);
 
         requests = new Requests();
 
@@ -127,6 +139,19 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         usb_open();
+                    }
+                });
+                thread.start();
+            }
+        });
+
+        btDisconnect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        usb_close();
                     }
                 });
                 thread.start();
@@ -153,18 +178,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btDisconnect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        usb_close();
-                    }
-                });
-                thread.start();
-            }
-        });
 
     }
 
@@ -174,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
         boolean result = false;
 
         mFastInitCompleted = false;
+
         mUsbDevice = null;
         mUsbInterface = null;
         mUsbEndpointIn = null;
@@ -275,6 +289,8 @@ public class MainActivity extends AppCompatActivity {
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, false));
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE, false));
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DASHBOARD_BUTTON_STATE, false));
+
         if (connected()) {
             if (mUsbInterface != null) {
                 mUsbDeviceConnection.releaseInterface(mUsbInterface);
@@ -291,6 +307,8 @@ public class MainActivity extends AppCompatActivity {
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, true));
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DISCONNECT_BUTTON_STATE, false));
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, false));
+        myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_DASHBOARD_BUTTON_STATE, false));
+
     }
 
     @Override
@@ -369,6 +387,8 @@ public class MainActivity extends AppCompatActivity {
                 requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) (key >> 8);
                 requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
                 mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN);
+                myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_FASTINIT_BUTTON_STATE, mFastInitCompleted));
+
             }
         } catch (Exception ex) {
             log_msg(ex.toString());
@@ -475,10 +495,10 @@ public class MainActivity extends AppCompatActivity {
         if (data_len > 0) {
             // Remove the request bytes from the start
             System.arraycopy(buf, request_len, mReadBuffer, 0, data_len - request_len);
-            data_len -= response_len;
+            data_len -= request_len;
         }
 
-        // The cleaned up mReadBuffer
+        // The cleaned up response
         log_data(mReadBuffer, data_len, false);
         return data_len;
     }
