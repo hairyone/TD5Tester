@@ -184,6 +184,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean usb_open(){
         myHandler.sendMessage(Message.obtain(myHandler, Consts.UI_HANDLER_SET_CONNECT_BUTTON_STATE, false));
 
+        // generate_key(0xC0 << 8 | 0x87);
+        // generate_key(0xC0 << 8 & 0x87);
+
         boolean result = false;
 
         mFastInitCompleted = false;
@@ -408,7 +411,9 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 seed = tmp | 1;
             }
+            log_msg(String.format("tap=%d, tmp=%d, a=%d, b=%d, seed=%d", tap, tmp, seed >> 0x03 & 1, seed >> 0x0d & 1, seed));
         }
+        log_msg(String.format("seed_hi=%02X, seed_lo=%02X, key_hi=%02X, key_lo=%02X", seedin >> 8, seedin & 0xFF, seed >> 8, seed & 0xFF));
         return seed;
     }
 
