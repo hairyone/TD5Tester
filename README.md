@@ -28,9 +28,6 @@ back the 2 status bytes and any data that is held in the buffer.
 
    The FTDI chip returns data as packets and the first two bytes of each packet are the modem status bytes.  If you do a bulkTransfer larger than the maxPacketSize the modem status bytes are repeated at the start of every packet.
 
-https://github.com/mik3y/usb-serial-for-android/issues/4
-http://git.altlinux.org/people/manowar/public/usb-serial-for-android.git
-
 ## Credits
 
 Much of the above would not have been possible without the research done by the people below:
