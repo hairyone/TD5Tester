@@ -32,11 +32,11 @@ back the 2 status bytes and any data that is held in the buffer.
 
 Much of the above would not have been possible without the research done by the people below:
 
-* Python app to communicate with ECU: https://github.com/mik3y/usb-serial-for-android/issues/4
+* Java library that deals with a function to strip the modem status bytes: https://github.com/mik3y/usb-serial-for-android/issues/4
 
 * Using a VAG COM KKL cable with Python: http://www.discotd5.com/data-logging/desktop-diagnostics
 
-* How to communicate with the FTDI chip using controlTransfer(): https://github.com/eblot/pyftdi
+* How to communicate with the FTDI chip using controlTransfer(), it also contains the only notes I have found showing how the modem status bytes should be interpreted: https://github.com/eblot/pyftdi
 
 ## Example output
 
