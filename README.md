@@ -7,31 +7,32 @@ To use this you will need a VAG COM KKL usb -> OBD2 cable that uses an FTDI chip
 Developed with Android Studio.
 
 
-FTDI Notes
+## FTDI Notes
 
 1. Why does a bulkTransfer sometimes return before all the requested bytes have been received and the timeout has not expired?
 
 http://www.ftdichip.com/Support/Knowledgebase/index.html?an232b_04smalldataend.htm
 
-When transferring data from an FTDI USB-Serial or USB-FIFO IC device to the PC, the device will send the data given one of the following conditions:
+> When transferring data from an FTDI USB-Serial or USB-FIFO IC device to the PC, the device will send the data given one of the following conditions:
 
-1. The buffer is full (64 bytes made up of 2 status bytes and 62 user bytes).
+> 1. The buffer is full (64 bytes made up of 2 status bytes and 62 user bytes).
 
-2. One of the RS232 status lines has changed (USB-Serial chips only). A change of level(high or low) on CTS# / DSR# / DCD# or RI# will cause it to pass back the current buffer even though it may be empty or have less than 64 bytes in it.
+> 2. One of the RS232 status lines has changed (USB-Serial chips only). A change of level(high or low) on CTS# / DSR# / DCD# or RI# will cause it to pass back the current buffer even though it may be empty or have less than 64 bytes in it.
 
-3. An event character had been enabled and was detected in the incoming data stream.
+> 3. An event character had been enabled and was detected in the incoming data stream.
 
-4. A timer integral to the chip has timed out. There is a timer (latency timer) in theFT232R, FT245R, FT2232C, FT232BM and FT245BM chips that measures the time since data waslast sent to the PC. The default value of the timer is set to 16 milliseconds. Every time data is sent back to the PC the timer is reset. If it times-out then the chip will send
+> 4. A timer integral to the chip has timed out. There is a timer (latency timer) in theFT232R, FT245R, FT2232C, FT232BM and FT245BM chips that measures the time since data waslast sent to the PC. The default value of the timer is set to 16 milliseconds. Every time data is sent back to the PC the timer is reset. If it times-out then the chip will send
 back the 2 status bytes and any data that is held in the buffer.
 
 2. Why are there spurious bytes in the received data.
 
-The FTDI chip returns data as packets and the first two bytes of each packet are the modem status bytes. If you request to read more than 
-If you do a bulkTransfer larger than the maxPacketSize the modem status bytes are repeated at the start of every packet.
+The FTDI chip returns data as packets and the first two bytes of each packet are the modem status bytes.  If you do a bulkTransfer larger than the maxPacketSize the modem status bytes are repeated at the start of every packet.
 
 https://github.com/mik3y/usb-serial-for-android/issues/4
 http://git.altlinux.org/people/manowar/public/usb-serial-for-android.git
 
+
+## Example output
 
 This is what the first sucessful fast_init looks like in the logcat
 
