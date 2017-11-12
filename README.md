@@ -11,26 +11,35 @@ Developed with Android Studio.
 
 1. Why does a bulkTransfer sometimes return before all the requested bytes have been received and the timeout has not expired?
 
-http://www.ftdichip.com/Support/Knowledgebase/index.html?an232b_04smalldataend.htm
+   http://www.ftdichip.com/Support/Knowledgebase/index.html?an232b_04smalldataend.htm
 
 > When transferring data from an FTDI USB-Serial or USB-FIFO IC device to the PC, the device will send the data given one of the following conditions:
-
+>
 > 1. The buffer is full (64 bytes made up of 2 status bytes and 62 user bytes).
-
+>
 > 2. One of the RS232 status lines has changed (USB-Serial chips only). A change of level(high or low) on CTS# / DSR# / DCD# or RI# will cause it to pass back the current buffer even though it may be empty or have less than 64 bytes in it.
-
+>
 > 3. An event character had been enabled and was detected in the incoming data stream.
-
+>
 > 4. A timer integral to the chip has timed out. There is a timer (latency timer) in theFT232R, FT245R, FT2232C, FT232BM and FT245BM chips that measures the time since data waslast sent to the PC. The default value of the timer is set to 16 milliseconds. Every time data is sent back to the PC the timer is reset. If it times-out then the chip will send
 back the 2 status bytes and any data that is held in the buffer.
 
 2. Why are there spurious bytes in the received data.
 
-The FTDI chip returns data as packets and the first two bytes of each packet are the modem status bytes.  If you do a bulkTransfer larger than the maxPacketSize the modem status bytes are repeated at the start of every packet.
+   The FTDI chip returns data as packets and the first two bytes of each packet are the modem status bytes.  If you do a bulkTransfer larger than the maxPacketSize the modem status bytes are repeated at the start of every packet.
 
 https://github.com/mik3y/usb-serial-for-android/issues/4
 http://git.altlinux.org/people/manowar/public/usb-serial-for-android.git
 
+## Credits
+
+Much of the above would not have been possible without the research done by the people below:
+
+* Python app to communicate with ECU: https://github.com/mik3y/usb-serial-for-android/issues/4
+
+* Using a VAG COM KKL cable with Python: http://www.discotd5.com/data-logging/desktop-diagnostics
+
+* How to communicate with the FTDI chip using controlTransfer(): https://github.com/eblot/pyftdi
 
 ## Example output
 
