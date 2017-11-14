@@ -23,6 +23,10 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.util.Random;
+
+import de.nitri.gauge.Gauge;
+
 public class DashboardFragment extends Fragment {
 
     private static final String TAG = ConnectFragment.class.getSimpleName();
@@ -41,11 +45,10 @@ public class DashboardFragment extends Fragment {
 
     @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
     public void onDashboardEvent(DashboardEvent event) {
-        tvDashboard.append("hahaha\n");
-        // tvDashboard.setText(String.format("data_type=%s, data=%s", event.data_type.toString(), Util.byte_array_to_hex(event.data, event.data.length)));
+        gaugeRpm.setValue(new Random().nextInt(101 - 5) + 5);
     }
 
-    TextView tvDashboard;
+    Gauge gaugeRpm;
 
     public DashboardFragment() {
         // Required empty public constructor
@@ -59,8 +62,8 @@ public class DashboardFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.dashboard_fragment, container, false);
-        tvDashboard = (TextView) view.findViewById(R.id.tvDashboard);
-        tvDashboard.setMovementMethod(new ScrollingMovementMethod());
+        gaugeRpm = (Gauge) view.findViewById(R.id.gaugeRpm);
+        gaugeRpm.moveToValue(90);
         return view;
     }
 

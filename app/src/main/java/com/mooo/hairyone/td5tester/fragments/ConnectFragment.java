@@ -44,16 +44,76 @@ import java.util.Iterator;
 public class ConnectFragment extends Fragment {
 
     private static final String TAG = ConnectFragment.class.getSimpleName();
+    private static final String STATE_TVINFO = "tvinfo";
+
+    TextView tvInfo;
+    ImageButton btConnect;
+    ImageButton btDisconnect;
+    ImageButton btFastInit;
+    ImageButton btClear;
+
+    byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
+    boolean mHaveUsbPermission = false;
+    boolean mFastInitCompleted = false;
+    Requests mRequests = new Requests();
+    UsbDevice mUsbDevice = null;
+    UsbInterface mUsbInterface = null;
+    UsbEndpoint mUsbEndpointIn = null;
+    UsbEndpoint mUsbEndpointOut = null;
+    UsbDeviceConnection mUsbDeviceConnection = null;
+
+    private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Consts.ACTION_USB_PERMISSION.equals(action)) {
+                if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                    UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    log_msg(String.format("permission granted for %s", usbDevice.getProductName()));
+                    mHaveUsbPermission = true;
+                }
+            }
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                mUsbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                log_msg(String.format("usb_attached=%s", mUsbDevice.getProductName()));
+                // usb_open();
+            }
+            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
+                if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
+                    usb_close();
+                }
+            }
+        }
+    };
 
     @Override
     public void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
-        EventBus.getDefault().post(new NotConnectedEvent());
+        EventBus.getDefault().post(new MessageEvent("onStart()"));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        EventBus.getDefault().post(new MessageEvent("onResume()"));
+        getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(Consts.ACTION_USB_PERMISSION));
+        getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
+        getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
+    }
+
+    @Override
+    public void onPause() {
+        EventBus.getDefault().post(new MessageEvent("onPause()"));
+        getActivity().unregisterReceiver(mBroadcastReceiver);
+        super.onPause();
     }
 
     @Override
     public void onStop() {
+        EventBus.getDefault().post(new MessageEvent("onStop()"));
         EventBus.getDefault().post(new BusyEvent());
         EventBus.getDefault().unregister(this);
         super.onStop();
@@ -94,31 +154,13 @@ public class ConnectFragment extends Fragment {
         Util.setImageButtonState(btClear, true);
     }
 
-    TextView tvInfo;
-    ImageButton btConnect;
-    ImageButton btDisconnect;
-    ImageButton btFastInit;
-    ImageButton btClear;
-
-    byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
-    boolean mHaveUsbPermission = false;
-    boolean mFastInitCompleted = false;
-    Requests requests = null;
-
-    PendingIntent mPermissionIntent;
-    UsbDevice mUsbDevice = null;
-    UsbInterface mUsbInterface = null;
-    UsbEndpoint mUsbEndpointIn = null;
-    UsbEndpoint mUsbEndpointOut = null;
-    UsbDeviceConnection mUsbDeviceConnection = null;
-
-    public ConnectFragment() {
-        // Required empty public constructor
+    public ConnectFragment() {// Required empty public constructor
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putCharSequence(STATE_TVINFO, tvInfo.getText());
     }
 
     @Override
@@ -132,14 +174,15 @@ public class ConnectFragment extends Fragment {
         tvInfo = (TextView) view.findViewById(R.id.tvInfo);
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
 
-        requests = new Requests();
+        if (savedInstanceState != null) {
+            tvInfo.setText(savedInstanceState.getCharSequence(STATE_TVINFO));
+        }
 
-        mPermissionIntent = PendingIntent.getBroadcast(getContext(), 0, new Intent(Consts.ACTION_USB_PERMISSION), 0);
-        IntentFilter filter = new IntentFilter(Consts.ACTION_USB_PERMISSION);
-        getActivity().registerReceiver(mUsbDeviceReceiver, filter);
-
-        getActivity().registerReceiver(mUsbDeviceReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
-        getActivity().registerReceiver(mUsbDeviceReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
+        // set the initial button state before the EventBus is registered
+        Util.setImageButtonState(btConnect, true);
+        Util.setImageButtonState(btDisconnect, false);
+        Util.setImageButtonState(btFastInit, false);
+        Util.setImageButtonState(btClear, false);
 
         btConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -190,32 +233,6 @@ public class ConnectFragment extends Fragment {
         return view;
     }
 
-    private final BroadcastReceiver mUsbDeviceReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-        String action = intent.getAction();
-        if (Consts.ACTION_USB_PERMISSION.equals(action)) {
-            if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                log_msg(String.format("permission granted for %s", usbDevice.getProductName()));
-                mHaveUsbPermission = true;
-            }
-        }
-        if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-            mUsbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            log_msg(String.format("usb_attached=%s", mUsbDevice.getProductName()));
-            // usb_open();
-        }
-        if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
-            UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
-            if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
-                usb_close();
-            }
-        }
-        }
-    };
-
     private boolean usb_open(){
         EventBus.getDefault().post(new BusyEvent());
         log_msg("connecting");
@@ -251,7 +268,7 @@ public class ConnectFragment extends Fragment {
         log_msg(String.format("connected to %s", mUsbDevice.getProductName()));
 
         log_msg(String.format("requesting permission for %s", mUsbDevice.getProductName()));
-        manager.requestPermission(mUsbDevice, mPermissionIntent);
+        manager.requestPermission(mUsbDevice, PendingIntent.getBroadcast(getContext(), 0, new Intent(Consts.ACTION_USB_PERMISSION), 0));
 
         // FIXME: The rest of this code should be fired in another thread when permission is granted
         int cnt = 0;
@@ -405,8 +422,8 @@ public class ConnectFragment extends Fragment {
             if (get_pid(Requests.RequestPidEnum.INIT_FRAME) && get_pid(Requests.RequestPidEnum.START_DIAGNOSTICS) && get_pid(Requests.RequestPidEnum.REQUEST_SEED)) {
                 int seed = (short) (mReadBuffer[3] << 8 | mReadBuffer[4]);
                 int key = generate_key(seed);
-                requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) (key >> 8);
-                requests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
+                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) (key >> 8);
+                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
                 mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN);
                 if (mFastInitCompleted) {
                     EventBus.getDefault().post(new AuthorisedEvent());
@@ -454,9 +471,9 @@ public class ConnectFragment extends Fragment {
     }
 
     private void send(Requests.RequestPidEnum pid) {
-        int len = requests.request.get(pid).request.length;
-        byte[] data = requests.request.get(pid).request;
-        String name = requests.request.get(pid).name;
+        int len = mRequests.request.get(pid).request.length;
+        byte[] data = mRequests.request.get(pid).request;
+        String name = mRequests.request.get(pid).name;
 
         data[len - 1] = checksum(data, len - 1);
         log_msg(name);
@@ -478,8 +495,8 @@ public class ConnectFragment extends Fragment {
         //  2.  In every packet of 64 bytes returned by the FTDI chip there are 2 modem status bytes
         //      at the start of each packet.
 
-        int request_len = requests.request.get(pid).request.length;
-        int response_len = requests.request.get(pid).response_len;
+        int request_len = mRequests.request.get(pid).request.length;
+        int response_len = mRequests.request.get(pid).response_len;
         int expected_response_len = request_len + response_len;
         int max_packet_size = mUsbEndpointIn.getMaxPacketSize();
         int modem_status_len = 2;
