@@ -5,6 +5,7 @@ import android.hardware.usb.UsbConstants;
 public class FTDI {
 
     // The only chip I am testing with is the FT232RL
+
     public static final int VENDOR_ID           = 0x0403;
     public static final int PRODUCT_ID          = 0x6001;
 
@@ -27,27 +28,27 @@ public class FTDI {
     public static final int USB_ENDPOINT_OUT    = 0x00;
 
     public static final int CH_A                = 1;        // FT232R just has a single interface
-    public static final int REQ_OUT             = UsbConstants.USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT; // 0x0040;   // Control Transfer Out
+    public static final int REQ_OUT             = UsbConstants.USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT;
     public static final int REQ_IN              = UsbConstants.USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN;
 
     // Requests
-    public static final int SIO_RESET               = 0;    // Reset the port
-    public static final int SIO_SET_MODEM_CTRL      = 1;    // Set the modem control register
-    public static final int SIO_SET_FLOW_CTRL       = 2;    // Set flow control register
-    public static final int SIO_SET_BAUDRATE        = 3;    // Set baud rate
-    public static final int SIO_SET_DATA            = 4;    // Set the data characteristics of the port
-    public static final int SIO_POLL_MODEM_STATUS   = 5;    // Get line status
-    public static final int SIO_SET_EVENT_CHAR      = 6;    // Change event character
-    public static final int SIO_SET_ERROR_CHAR      = 7;    // Change error character
-    public static final int SIO_SET_LATENCY_TIMER   = 9;    // Change latency timer
-    public static final int SIO_GET_LATENCY_TIMER   = 10;   // Get latency timer
-    public static final int SIO_SET_BITMODE         = 11;   // Change bit mode
-    public static final int SIO_READ_PINS           = 12;   // Read GPIO pin value
+    public static final int SIO_RESET               = 0;  // Reset the port
+    public static final int SIO_SET_MODEM_CTRL      = 1;  // Set the modem control register
+    public static final int SIO_SET_FLOW_CTRL       = 2;  // Set flow control register
+    public static final int SIO_SET_BAUDRATE        = 3;  // Set baud rate
+    public static final int SIO_SET_DATA            = 4;  // Set the data characteristics of the port
+    public static final int SIO_POLL_MODEM_STATUS   = 5;  // Get line status
+    public static final int SIO_SET_EVENT_CHAR      = 6;  // Change event character
+    public static final int SIO_SET_ERROR_CHAR      = 7;  // Change error character
+    public static final int SIO_SET_LATENCY_TIMER   = 9;  // Change latency timer
+    public static final int SIO_GET_LATENCY_TIMER   = 10; // Get latency timer
+    public static final int SIO_SET_BITMODE         = 11; // Change bit mode
+    public static final int SIO_READ_PINS           = 12; // Read GPIO pin value
 
     // Reset commands
-    public static final int SIO_RESET_SIO           = 0;    // Reset device
-    public static final int SIO_RESET_PURGE_RX      = 1;    // Drain RX buffer
-    public static final int SIO_RESET_PURGE_TX      = 2;    // Drain TX buffer
+    public static final int SIO_RESET_SIO           = 0; // Reset device
+    public static final int SIO_RESET_PURGE_RX      = 1; // Drain RX buffer
+    public static final int SIO_RESET_PURGE_TX      = 2; // Drain TX buffer
 
     // Flow control
     public static final int SIO_DISABLE_FLOW_CTRL   = 0x0;
@@ -83,7 +84,6 @@ public class FTDI {
 
     public static final int LINE_8N1        = (((BITS_8 & 0x0F) | PARITY_NONE << 8) | STOP_BIT_1 << 11);
 
-
     // Bit bang
     public static final int BITMODE_RESET       = 0x00; // switch off bitbang mode
     public static final int BITMODE_BITBANG     = 0x01; // classical asynchronous bitbang mode
@@ -99,43 +99,28 @@ public class FTDI {
     public static final int BITBANG_ON  = (0x01 & 0xFF) | ((BITMODE_BITBANG & BITMODE_MASK) << 8);
     public static final int BITBANG_OFF = (0x00 & 0xFF) | ((BITMODE_RESET & BITMODE_MASK) << 8);
 
-    // Error bits
-    public static final int ERROR_BIT_0 = 0x00;
-    public static final int ERROR_BIT_1 = 0x8E;
+    // Every packet from the FTDI chip has two status bytes at the start
+    // Modem status = buf[0] & 0b11110000
+    // Line status  = buf[1] & 0b11111111
 
-    // Modem status
+    // Modem status bits
     public static final int MODEM_CTS   = (1 << 4);  // Clear to send
     public static final int MODEM_DSR   = (1 << 5);  // Data set ready
     public static final int MODEM_RI    = (1 << 6);  // Ring indicator
     public static final int MODEM_RLSD  = (1 << 7);  // Carrier detect
-    public static final int MODEM_DR    = (1 << 8);  // Data ready
-    public static final int MODEM_OE    = (1 << 9);  // Overrun error
-    public static final int MODEM_PE    = (1 << 10); // Parity error
-    public static final int MODEM_FE    = (1 << 11); // Framing error
-    public static final int MODEM_BI    = (1 << 12); // Break interrupt
-    public static final int MODEM_THRE  = (1 << 13); // Transmitter holding register
-    public static final int MODEM_TEMT  = (1 << 14); // Transmitter empty
-    public static final int MODEM_RCVE  = (1 << 15); // Error in RCVR FIFO
 
+    // Line status bits
+    public static final int MODEM_DR    = (1 << 0); // Data ready
+    public static final int MODEM_OE    = (1 << 1); // Overrun error
+    public static final int MODEM_PE    = (1 << 2); // Parity error
+    public static final int MODEM_FE    = (1 << 3); // Framing error
+    public static final int MODEM_BI    = (1 << 4); // Break interrupt
+    public static final int MODEM_THRE  = (1 << 5); // Transmitter holding register
+    public static final int MODEM_TEMT  = (1 << 6); // Transmitter empty
+    public static final int MODEM_RCVE  = (1 << 7); // Error in RCVR FIFO
 
-    /*
-         ==== BIT 0 ====    ==== BIT 1 ====
-         0 0 0 0 0 0 0 0  | 1 0 0 0 1 1 1 0   Error bits 0x00 0x8E
-
-         0 0 0 0 0 0 0 0  | 0 0 0 0 0 0 0 0
-                 | | | |    | | | | | | | +-- RX FIFO error
-                 | | | |    | | | | | | +---- TX empty
-                 | | | |    | | | | | +------ TX holding
-                 | | | |    | | | | +-------- Break interrupt
-                 | | | |    | | | +---------- Framing error
-                 | | | |    | | +------------ Parity error
-                 | | | |    | +-------------- Overrun error
-                 | | | |    +---------------- Data ready
-                 | | | +--------------------- Carrier detect
-                 | | +----------------------- Ring indicator
-                 | +------------------------- Data set ready
-                 +=========================== Clear to send
-    */
+    // The bits of the line status byte that would indicate an error
+    public static final int ERROR_MASK  = 0b10001110;
 
     // Latency
     public static final int LATENCY_MIN = 12;

@@ -4,7 +4,7 @@ import java.util.EnumMap;
 
 public class Requests {
 
-    enum RequestPidEnum {
+    public enum RequestPidEnum {
         INIT_FRAME, START_DIAGNOSTICS, REQUEST_SEED, KEY_RETURN,
         ENGINE_RPM, BATTERY_VOLTAGE, VEHICLE_SPEED, START_FUELLING,
         TEMPERATURES, MAP_MAF, AMBIENT_PRESSURE, THROTTLE_POSITION,
@@ -13,10 +13,10 @@ public class Requests {
         GET_INPUTS, GET_FUEL_DEMAND
     };
 
-    class Request {
-        byte response_len;
-        String name;
-        byte[] request;
+    public class Request {
+        public byte response_len;
+        public String name;
+        public byte[] request;
 
         public Request(byte response_len, String name, byte[] request) {
             this. response_len = response_len;
@@ -28,7 +28,6 @@ public class Requests {
     public static EnumMap<RequestPidEnum, Request> request = new EnumMap<RequestPidEnum, Request>(RequestPidEnum.class);
 
     public Requests() {
-
         request.put(RequestPidEnum.INIT_FRAME,           new Request((byte)  5, "INIT_FRAME",        new byte[] { (byte) 0x81, (byte) 0x13, (byte) 0xF7, (byte) 0x81, (byte) 0x00 }));
         request.put(RequestPidEnum.START_DIAGNOSTICS,    new Request((byte)  3, "START_DIAGNOSTICS", new byte[] { (byte) 0x02, (byte) 0x10, (byte) 0xA0, (byte) 0x00 }));
         request.put(RequestPidEnum.REQUEST_SEED,         new Request((byte)  6, "REQUEST_SEED",      new byte[] { (byte) 0x02, (byte) 0x27, (byte) 0x01, (byte) 0x00 }));
@@ -51,7 +50,6 @@ public class Requests {
         request.put(RequestPidEnum.CLEAR_FAULTS,         new Request((byte)  4, "CLEAR_FAULTS",      new byte[] { (byte) 0x14, (byte) 0x31, (byte) 0xDD, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 }));
         request.put(RequestPidEnum.GET_INPUTS,           new Request((byte)  6, "GET_INPUTS",        new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1E, (byte) 0x00 }));
         request.put(RequestPidEnum.GET_FUEL_DEMAND,      new Request((byte)  6, "GET_FUEL_DEMAND",   new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1D, (byte) 0x00 }));
-
     }
 
 }

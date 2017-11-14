@@ -29,13 +29,25 @@ import java.util.Iterator;
 
 public  class Util {
 
-    static void setImageButtonState(ImageButton imageButton, boolean enabled) {
+    public static void setImageButtonState(ImageButton imageButton, boolean enabled) {
         imageButton.setEnabled(enabled);
         if (enabled) {
             imageButton.getBackground().setColorFilter(null);
         } else {
             imageButton.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
         }
+    }
+
+    public static String byte_array_to_hex(byte[] data, int len) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++) {
+            sb.append(String.format("%02X ", data[i] & 0xFF));
+        }
+        return sb.toString();
+    }
+
+    public static String integer_to_binary(int value) {
+        return String.format("%8s", Integer.toBinaryString(value & 0xFF)).replace(' ', '0');
     }
 
 }
