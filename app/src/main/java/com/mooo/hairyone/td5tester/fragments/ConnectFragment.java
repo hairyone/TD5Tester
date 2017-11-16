@@ -40,6 +40,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ConnectFragment extends Fragment {
 
@@ -50,11 +51,13 @@ public class ConnectFragment extends Fragment {
     ImageButton btConnect;
     ImageButton btDisconnect;
     ImageButton btFastInit;
+    ImageButton btDashboard;
     ImageButton btClear;
 
     byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
     boolean mHaveUsbPermission = false;
     boolean mFastInitCompleted = false;
+    private volatile boolean mDashboardRunning = false;
     Requests mRequests = new Requests();
     UsbDevice mUsbDevice = null;
     UsbInterface mUsbInterface = null;
@@ -87,6 +90,10 @@ public class ConnectFragment extends Fragment {
             }
         }
     };
+
+    public ConnectFragment() {
+        // Required empty public constructor
+    }
 
     @Override
     public void onStart() {
@@ -154,8 +161,6 @@ public class ConnectFragment extends Fragment {
         Util.setImageButtonState(btClear, true);
     }
 
-    public ConnectFragment() {// Required empty public constructor
-    }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -170,6 +175,7 @@ public class ConnectFragment extends Fragment {
         btConnect = (ImageButton) view.findViewById(R.id.btConnect);
         btDisconnect= (ImageButton) view.findViewById(R.id.btDisconnect);
         btFastInit = (ImageButton) view.findViewById(R.id.btFastInit);
+        btDashboard = (ImageButton) view.findViewById(R.id.btDashboard);
         btClear = (ImageButton) view.findViewById(R.id.btClear);
         tvInfo = (TextView) view.findViewById(R.id.tvInfo);
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
@@ -222,6 +228,25 @@ public class ConnectFragment extends Fragment {
                 thread.start();
             }
         });
+
+        btDashboard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mDashboardRunning) {
+                            mDashboardRunning = false;
+                        } else {
+                            mDashboardRunning = true;
+                            dashboard();
+                        }
+                    }
+                });
+                thread.start();
+            }
+        });
+
 
         btClear.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -396,11 +421,6 @@ public class ConnectFragment extends Fragment {
     private void fast_init() {
         EventBus.getDefault().post(new BusyEvent());
 
-        // test event
-        DashboardEvent event = new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, new byte[] { (byte) 0x12, (byte) 0x34});
-        boolean rc = EventBus.getDefault().hasSubscriberForEvent(DashboardEvent.class);
-        EventBus.getDefault().post(event);
-
         byte[] HI = new byte[]{(byte) 0x01};
         byte[] LO = new byte[]{(byte) 0x00};
 
@@ -501,8 +521,8 @@ public class ConnectFragment extends Fragment {
         int max_packet_size = mUsbEndpointIn.getMaxPacketSize();
         int modem_status_len = 2;
         final int modem_status_bytes_len = (
-                (int) Math.ceil(
-                        ((double) expected_response_len) / ((double) (max_packet_size - modem_status_len)))
+            (int) Math.ceil(
+                ((double) expected_response_len) / ((double) (max_packet_size - modem_status_len)))
         ) * modem_status_len;
 
         byte[] buf = new byte[expected_response_len + modem_status_bytes_len];
@@ -554,6 +574,33 @@ public class ConnectFragment extends Fragment {
 
     private void log_data(byte[] data, int len, boolean is_tx) {
         log_msg(String.format("%s %s", is_tx ? ">>" : "<<", Util.byte_array_to_hex(data, len)));
+    }
+
+    private void dashboard() {
+        try {
+            while (mDashboardRunning) {
+                if (mFastInitCompleted) {
+                    if (get_pid(Requests.RequestPidEnum.ENGINE_RPM)) {
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, mReadBuffer[3] << 8 | mReadBuffer[4]));
+                    }
+                    if (get_pid(Requests.RequestPidEnum.BATTERY_VOLTAGE)) {
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, (mReadBuffer[5] << 8 | mReadBuffer[6]) / 1000.0));
+                    }
+                    if (get_pid(Requests.RequestPidEnum.VEHICLE_SPEED)) {
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, (mReadBuffer[3])));
+                    }
+                } else {
+                    // Not connected so just wiggle the gauges
+                    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, ThreadLocalRandom.current().nextInt(500, 3500 + 1)));
+                    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, ThreadLocalRandom.current().nextInt(8, 14 + 1)));
+                    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, ThreadLocalRandom.current().nextInt(30, 55 + 1)));
+                }
+                Thread.sleep(1000);
+            }
+        } catch (Exception ex) {
+            mDashboardRunning = false;
+            log_msg(ex.toString());
+        }
     }
 
 }

@@ -1,35 +1,31 @@
 package com.mooo.hairyone.td5tester.fragments;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.Fragment;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
-import com.mooo.hairyone.td5tester.Consts;
 import com.mooo.hairyone.td5tester.R;
-import com.mooo.hairyone.td5tester.Util;
-import com.mooo.hairyone.td5tester.events.BusyEvent;
 import com.mooo.hairyone.td5tester.events.DashboardEvent;
-import com.mooo.hairyone.td5tester.events.MessageEvent;
-import com.mooo.hairyone.td5tester.events.NotConnectedEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.util.Random;
-
-import de.nitri.gauge.Gauge;
+import at.grabner.circleprogress.CircleProgressView;
 
 public class DashboardFragment extends Fragment {
 
     private static final String TAG = ConnectFragment.class.getSimpleName();
+
+    CircleProgressView gRPM;
+    CircleProgressView gVOLT;
+    CircleProgressView gMPH;
+
+    public DashboardFragment() {
+        // Required empty public constructor
+    }
 
     @Override
     public void onStart() {
@@ -45,13 +41,18 @@ public class DashboardFragment extends Fragment {
 
     @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
     public void onDashboardEvent(DashboardEvent event) {
-        gaugeRpm.setValue(new Random().nextInt(101 - 5) + 5);
-    }
-
-    Gauge gaugeRpm;
-
-    public DashboardFragment() {
-        // Required empty public constructor
+        int value = (int) event.value;
+        switch (event.data_type) {
+            case RPM:
+                gRPM.setValue(value);
+                break;
+            case BATTERY_VOLTAGE:
+                gVOLT.setValue(value);
+                break;
+            case VEHICLE_SPEED:
+                gMPH.setValue(value);
+                break;
+        }
     }
 
     @Override
@@ -62,8 +63,10 @@ public class DashboardFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.dashboard_fragment, container, false);
-        gaugeRpm = (Gauge) view.findViewById(R.id.gaugeRpm);
-        gaugeRpm.moveToValue(90);
+        gRPM = (CircleProgressView) view.findViewById(R.id.gRPM);
+        gVOLT = (CircleProgressView) view.findViewById(R.id.gVOLT);
+        gMPH = (CircleProgressView) view.findViewById(R.id.gMPH);
+
         return view;
     }
 

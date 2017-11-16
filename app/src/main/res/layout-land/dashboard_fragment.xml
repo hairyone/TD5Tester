@@ -2,13 +2,12 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:gauge="http://schemas.android.com/apk/res-auto"
+    xmlns:CircleProgressView="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.mooo.hairyone.td5tester.MainActivity"
     android:padding="1sp"
     android:orientation="vertical">
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0sp"
@@ -21,98 +20,71 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeRpm"
-                android:layout_width="0sp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="RPM"/>
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gRPM"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_barWidth="20sp"
+                CircleProgressView:cpv_maxValue="6000"
+                CircleProgressView:cpv_rimWidth="20sp"
+                CircleProgressView:cpv_seekMode="true"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="RPM"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_value="1000"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="0sp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeMph"
-                android:layout_width="0sp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="MPH" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="0sp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="horizontal">
-                <de.nitri.gauge.Gauge
-                    android:id="@+id/gaugeTemp"
-                    android:layout_width="0sp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    gauge:upperText="TEMP" />
-        </LinearLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0sp"
-        android:padding="1sp"
-        android:orientation="horizontal"
-        android:layout_weight="0.5">
         <LinearLayout
             android:layout_width="0sp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeA"
-                android:layout_width="0sp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="A"/>
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gMPH"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_barWidth="20sp"
+                CircleProgressView:cpv_maxValue="130"
+                CircleProgressView:cpv_rimWidth="20sp"
+                CircleProgressView:cpv_seekMode="true"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="MPH"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_value="70"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="0sp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeB"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="B"/>
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="0sp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeC"
-                android:layout_width="0sp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="C"/>
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="0sp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="horizontal">
-            <de.nitri.gauge.Gauge
-                android:id="@+id/gaugeD"
-                android:layout_width="0sp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                gauge:upperText="D"/>
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gVOLT"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_barWidth="20sp"
+                CircleProgressView:cpv_maxValue="20"
+                CircleProgressView:cpv_rimWidth="20sp"
+                CircleProgressView:cpv_seekMode="true"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="Volt"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_value="14.6"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"
+                CircleProgressView:cpv_decimalFormat="#0.0"/>
         </LinearLayout>
 
     </LinearLayout>
