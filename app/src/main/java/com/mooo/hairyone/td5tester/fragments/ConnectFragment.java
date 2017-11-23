@@ -45,7 +45,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class ConnectFragment extends Fragment {
 
     private static final String TAG = ConnectFragment.class.getSimpleName();
-    private static final String STATE_TVINFO = "tvinfo";
+    private static final String STATE_TVINFO = "TVINFO";
+    private static final String STATE_DASHBOARD_RUNNING = "DASHBOARD_RUNNING";
 
     TextView tvInfo;
     ImageButton btConnect;
@@ -68,26 +69,26 @@ public class ConnectFragment extends Fragment {
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (Consts.ACTION_USB_PERMISSION.equals(action)) {
-                if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                    UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    log_msg(String.format("permission granted for %s", usbDevice.getProductName()));
-                    mHaveUsbPermission = true;
-                }
+        String action = intent.getAction();
+        if (Consts.ACTION_USB_PERMISSION.equals(action)) {
+            if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                log_msg(String.format("permission granted for %s", usbDevice.getProductName()));
+                mHaveUsbPermission = true;
             }
-            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-                mUsbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                log_msg(String.format("usb_attached=%s", mUsbDevice.getProductName()));
-                // usb_open();
+        }
+        if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+            mUsbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            log_msg(String.format("usb_attached=%s", mUsbDevice.getProductName()));
+            // usb_open();
+        }
+        if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
+            if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
+                usb_close();
             }
-            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
-                UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
-                if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
-                    usb_close();
-                }
-            }
+        }
         }
     };
 
@@ -99,13 +100,13 @@ public class ConnectFragment extends Fragment {
     public void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
-        EventBus.getDefault().post(new MessageEvent("onStart()"));
+        Log.i(TAG, "onStart()");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        EventBus.getDefault().post(new MessageEvent("onResume()"));
+        Log.i(TAG, "onResume()");
         getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(Consts.ACTION_USB_PERMISSION));
         getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
         getActivity().registerReceiver(mBroadcastReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
@@ -113,63 +114,67 @@ public class ConnectFragment extends Fragment {
 
     @Override
     public void onPause() {
-        EventBus.getDefault().post(new MessageEvent("onPause()"));
+        Log.i(TAG, "onPause()");
         getActivity().unregisterReceiver(mBroadcastReceiver);
         super.onPause();
     }
 
     @Override
     public void onStop() {
-        EventBus.getDefault().post(new MessageEvent("onStop()"));
-        EventBus.getDefault().post(new BusyEvent());
+        Log.i(TAG, "onStop()");
         EventBus.getDefault().unregister(this);
         super.onStop();
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
         tvInfo.append(event.message + "\n");
         Log.w(TAG, event.message);
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onLogClearEvent(LogClearEvent event) {
         tvInfo.setText("");
+        //byte seed_hi = (byte) 0xcb;
+        //byte seed_lo = (byte) 0xb6;
+        //short seed = Util.bytes2short(seed_hi, seed_lo);
+        //log_msg(String.format("seed=%X, seed_hi=%X, seed_lo=%X", seed, seed_hi, seed_lo));
+        //log_msg(String.format("seed=%04X, key=%04X", seed, generate_key(seed)));
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onNotConnectedEvent(NotConnectedEvent event) {
         Util.setImageButtonState(btConnect, true);
         Util.setImageButtonState(btDisconnect, false);
         Util.setImageButtonState(btFastInit, false);
-        Util.setImageButtonState(btClear, false);
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onBusyEvent(BusyEvent event) {
         Util.setImageButtonState(btConnect, false);
         Util.setImageButtonState(btDisconnect, false);
         Util.setImageButtonState(btFastInit, false);
-        Util.setImageButtonState(btClear, false);
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConnectedEvent(ConnectedEvent event) {
         Util.setImageButtonState(btConnect, false);
         Util.setImageButtonState(btDisconnect, true);
         Util.setImageButtonState(btFastInit, true);
-        Util.setImageButtonState(btClear, true);
+        // Util.setImageButtonState(btClear, true);
     }
-
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
+        Log.i(TAG, "onSaveInstanceState()");
         savedInstanceState.putCharSequence(STATE_TVINFO, tvInfo.getText());
+        savedInstanceState.putBoolean(STATE_DASHBOARD_RUNNING, mDashboardRunning);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView()");
         View view =  inflater.inflate(R.layout.connect_fragment, container, false);
 
         btConnect = (ImageButton) view.findViewById(R.id.btConnect);
@@ -182,13 +187,14 @@ public class ConnectFragment extends Fragment {
 
         if (savedInstanceState != null) {
             tvInfo.setText(savedInstanceState.getCharSequence(STATE_TVINFO));
+            mDashboardRunning = savedInstanceState.getBoolean(STATE_DASHBOARD_RUNNING);
         }
 
         // set the initial button state before the EventBus is registered
         Util.setImageButtonState(btConnect, true);
         Util.setImageButtonState(btDisconnect, false);
         Util.setImageButtonState(btFastInit, false);
-        Util.setImageButtonState(btClear, false);
+        Util.setImageButtonState(btClear, true);
 
         btConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -262,11 +268,7 @@ public class ConnectFragment extends Fragment {
         EventBus.getDefault().post(new BusyEvent());
         log_msg("connecting");
 
-        // generate_key(0xC0 << 8 | 0x87);
-        // generate_key(0xC0 << 8 & 0x87);
-
         boolean result = false;
-
         mFastInitCompleted = false;
         mUsbDevice = null;
         mUsbInterface = null;
@@ -437,45 +439,70 @@ public class ConnectFragment extends Fragment {
 
             // So the FTDI chip will return the current contents of the RX buffer
             // if the latency timer has expired.
-            control_transfer(FTDI.SIO_SET_LATENCY_TIMER, FTDI.LATENCY_MAX);
+            // control_transfer(FTDI.SIO_SET_LATENCY_TIMER, FTDI.LATENCY_MAX);
 
             if (get_pid(Requests.RequestPidEnum.INIT_FRAME) && get_pid(Requests.RequestPidEnum.START_DIAGNOSTICS) && get_pid(Requests.RequestPidEnum.REQUEST_SEED)) {
-                int seed = (short) (mReadBuffer[3] << 8 | mReadBuffer[4]);
+                // https://stackoverflow.com/questions/736815/2-bytes-to-short-java
+                short seed = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                log_msg(String.format("seed=%X, seed_hi=%X, seed_lo=%X", seed, mReadBuffer[3], mReadBuffer[4]));
                 int key = generate_key(seed);
-                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) (key >> 8);
+                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) ((key & 0xFFFF) >>> 8);
                 mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
                 mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN);
-                if (mFastInitCompleted) {
-                    EventBus.getDefault().post(new AuthorisedEvent());
-                }
             }
+            log_msg(String.format("mFastinitCompleted=%b", mFastInitCompleted));
         } catch (Exception ex) {
             log_msg(ex.toString());
         }
         EventBus.getDefault().post(new ConnectedEvent());
     }
 
-    private int generate_key(int seedin) {
-        // we have to use an int because java doesn't do unsigned values so we use the lower 16 bits of an int
-        int seed = seedin;
-        int count = ((seed >> 0xC & 0x8) + (seed >> 0x5 & 0x4) + (seed >> 0x3 & 0x2) + (seed & 0x1)) + 1; // count == byte (0 .. 255)
-        log_msg(String.format("count=%d", count));
-        for (int idx = 0; idx < count; idx++) {
-            int tap = ((seed >> 1) + (seed >> 2) + (seed >> 8) + (seed >> 9)) & 1; // tap byte (0 .. 1)
-            int tmp = (seed >> 1 & 0xFFFF) | (tap << 0xF); // short (0 .. 65535)
-            if ((seed >> 0x3 & 1) == 1 && (seed >> 0xD & 1) == 1) {
+    /*
+    uint16_t generateKey(uint16_t seed) {
+        uint16_t tmp = 0;
+        byte tap = 0;
+        byte count = ((seed >> 0xC & 0x8) | (seed >> 0x5 & 0x4) | (seed >> 0x3 & 0x2) | (seed & 0x1)) + 1;
+        for (byte idx = 0; idx < count; idx++) {
+            tap = ((seed >> 1 ) ^ (seed >> 2 ) ^ (seed >> 8 ) ^ (seed >> 9 )) & 1;
+            tmp = ((seed >> 1) | (tap << 0xF));
+            if ((seed >> 0x3 & 1) && (seed >> 0xD & 1)) {
                 seed = tmp & ~1;
             } else {
                 seed = tmp | 1;
             }
-            log_msg(String.format("tap=%d, tmp=%05d, a=%d, b=%d, seed=%05d", tap, tmp, seed >> 0x03 & 1, seed >> 0x0d & 1, seed));
         }
-        log_msg(String.format("seed_hi=%02X, seed_lo=%02X, key_hi=%02X, key_lo=%02X", seedin >> 8, seedin & 0xFF, seed >> 8, seed & 0xFF));
+        return seed;
+    }
+    */
+
+    private int generate_key(int seedin) {
+        int seed = seedin & 0xFFFF;
+        log_msg(String.format("seed=%04X, seed_hi=%02X, seed_lo=%02X", seed & 0xFFFF, (seed & 0xFFFF) >>> 8, seed & 0xFF));
+        int count = (( (seed >>> 0xC & 0x8) | (seed >>> 0x5 & 0x4) | (seed >>> 0x3 & 0x2) | (seed & 0x1) ) + 1) & 0xFF;
+        log_msg(String.format("count=%d", count));
+        for (int idx = 0; idx < count; idx++) {
+            int tap = (( (seed >>> 1) ^ (seed >>> 2) ^ (seed >>> 8) ^ (seed >>> 9) ) & 1) & 0xFF;
+            int tmp = (seed >>> 1) | (tap << 0xF);
+            if ( (seed >>> 0x3 & 1) == 1 && (seed >>> 0xD & 1) == 1 ) {
+                seed = tmp & ~1;
+            } else {
+                seed = tmp | 1;
+            }
+            log_msg(String.format("tap=%d, tmp=%05d, a=%d, b=%d, seed=%05d", tap, tmp, seed >>> 0x03 & 1, seed >>> 0x0d & 1, seed));
+        }
+        log_msg(String.format("key_hi=%02X, key_lo=%02X", (seed & 0xFFFF) >>> 8, seed & 0xFF));
         return seed;
     }
 
     private boolean get_pid(Requests.RequestPidEnum pid) {
         boolean result = false;
+        if (pid != Requests.RequestPidEnum.INIT_FRAME) {
+            try {
+                Thread.sleep(Consts.SEND_REQUEST_DELAY);
+            } catch (Exception ex) {
+                log_msg(String.format("get_pid() error=%s", ex.toString()));
+            }
+        }
         send(pid);
         int len = readResponse(pid);
         if (len > 1) {
@@ -510,47 +537,72 @@ public class ConnectFragment extends Fragment {
     }
 
     private int readResponse(Requests.RequestPidEnum pid) {
-        // Create a temporary buffer to hold the mReadBuffer, note that:
-        //  1.  The original request is echoed in the mReadBuffer.
-        //  2.  In every packet of 64 bytes returned by the FTDI chip there are 2 modem status bytes
-        //      at the start of each packet.
 
         int request_len = mRequests.request.get(pid).request.length;
         int response_len = mRequests.request.get(pid).response_len;
-        int expected_response_len = request_len + response_len;
         int max_packet_size = mUsbEndpointIn.getMaxPacketSize();
         int modem_status_len = 2;
+
         final int modem_status_bytes_len = (
             (int) Math.ceil(
-                ((double) expected_response_len) / ((double) (max_packet_size - modem_status_len)))
+                ((double) request_len + response_len) / ((double) (max_packet_size - modem_status_len)))
         ) * modem_status_len;
 
-        byte[] buf = new byte[expected_response_len + modem_status_bytes_len];
+        int expected_len = request_len + response_len + modem_status_bytes_len;
+        byte[] buf = new byte[expected_len];
 
-        int bytes_read = bulk_transfer_read(buf, expected_response_len + modem_status_bytes_len);
-        log_data(buf, bytes_read, false);
+        long start_time = System.currentTimeMillis();
+        int offset = 0;
+        while (true) {
+            // Keep reading until we get the expected number of bytes or we timeout
+            int bytes_read = bulk_transfer_read(buf, expected_len);
+            if (Consts.LOG_EVERY_READ) {
+                log_data(buf, bytes_read, false);
+            }
 
-        if (Consts.LOG_EVERY_MODEM_STATUS || (buf[1] & FTDI.ERROR_MASK) > 0) {
-            String msg = String.format("modem_status=%s, line_status=%s", Util.integer_to_binary(buf[0]), Util.integer_to_binary(buf[1]));
-            log_msg(msg);
+            if (Consts.LOG_EVERY_MODEM_STATUS || (buf[1] & FTDI.ERROR_MASK) > 0) {
+                String msg = String.format("modem_status=%s, line_status=%s", Util.integer_to_binary(buf[0]), Util.integer_to_binary(buf[1]));
+                log_msg(msg);
+            }
+
+            // There should be at least the two status bytes from the FTDI chip
+            if (buf.length < 2) {
+                log_msg("malformed mReadBuffer");
+                return 0;
+            }
+
+            // Remove the modem status bytes from the start of each packet in the buffer
+            int data_len = filter_modem_status_bytes(buf, buf, Math.min(buf.length, bytes_read), max_packet_size, modem_status_len);
+
+            if (data_len > 0) {
+                System.arraycopy(buf, 0, mReadBuffer, offset, data_len);
+                offset += data_len;
+            }
+
+            if (pid == Requests.RequestPidEnum.KEY_RETURN && offset == 10 && mReadBuffer[7] == 0x67) {
+                // The only instance where a negative response is longer than a positive response
+                // >> 04 27 02 F7 B9 DD | 02 67 02 6B       Positive response
+                // >> 04 27 02 F7 B9 DD | 03 7F 27 35 DE    Negative response
+                break;
+            }
+
+            if (offset >= request_len + response_len || System.currentTimeMillis() - start_time > Consts.READ_RESPONSE_TIMEOUT ) {
+                if (System.currentTimeMillis() - start_time > FTDI.READ_TIMEOUT) {
+                    log_msg("timeout in read_response()");
+                }
+                break;
+            }
         }
 
-        if (buf.length < 2) {
-            log_msg("malformed mReadBuffer");
+        // Remove the echoed request
+        if (offset >= request_len) {
+            System.arraycopy(mReadBuffer, request_len, mReadBuffer, 0, offset - request_len);
+            log_data(mReadBuffer, offset - request_len, false);
+            return offset - request_len;
+        } else {
+            // not enough bytes for a plausible response
             return 0;
         }
-
-        // Remove the modem status bytes from each packet in the buf
-        int data_len = filter_modem_status_bytes(buf, buf, Math.min(buf.length, bytes_read), max_packet_size, modem_status_len);
-        if (data_len > 0) {
-            // Remove the request bytes from the start
-            System.arraycopy(buf, request_len, mReadBuffer, 0, data_len - request_len);
-            data_len -= request_len;
-        }
-
-        // The cleaned up response
-        log_data(mReadBuffer, data_len, false);
-        return data_len;
     }
 
     private int filter_modem_status_bytes(byte[] src, byte[] dest, int src_len, int max_packet_len, int modem_status_len) {
@@ -577,17 +629,24 @@ public class ConnectFragment extends Fragment {
     }
 
     private void dashboard() {
+        log_msg("dashboard starting");
         try {
             while (mDashboardRunning) {
                 if (mFastInitCompleted) {
                     if (get_pid(Requests.RequestPidEnum.ENGINE_RPM)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, mReadBuffer[3] << 8 | mReadBuffer[4]));
+                        double rpm = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        log_msg(String.format("rpm=%f", rpm));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, rpm));
                     }
                     if (get_pid(Requests.RequestPidEnum.BATTERY_VOLTAGE)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, (mReadBuffer[5] << 8 | mReadBuffer[6]) / 1000.0));
+                        double voltage = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]) / 1000.0;
+                        log_msg(String.format("voltage=%f", voltage));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, voltage));
                     }
                     if (get_pid(Requests.RequestPidEnum.VEHICLE_SPEED)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, (mReadBuffer[3])));
+                        double speed = mReadBuffer[3];
+                        log_msg(String.format("speed=%f", speed));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, speed));
                     }
                 } else {
                     // Not connected so just wiggle the gauges
@@ -595,12 +654,13 @@ public class ConnectFragment extends Fragment {
                     EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, ThreadLocalRandom.current().nextInt(8, 14 + 1)));
                     EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, ThreadLocalRandom.current().nextInt(30, 55 + 1)));
                 }
-                Thread.sleep(1000);
+                Thread.sleep(500);
             }
         } catch (Exception ex) {
-            mDashboardRunning = false;
             log_msg(ex.toString());
         }
+        mDashboardRunning = false;
+        log_msg("dashboard stopped");
     }
 
 }

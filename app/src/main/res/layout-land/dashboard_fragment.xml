@@ -35,7 +35,7 @@
                 CircleProgressView:cpv_unitPosition="bottom"
                 CircleProgressView:cpv_value="1000"
                 CircleProgressView:cpv_textMode="Value"
-                CircleProgressView:cpv_startAngle="90"/>
+                CircleProgressView:cpv_startAngle="90" />
         </LinearLayout>
 
         <LinearLayout

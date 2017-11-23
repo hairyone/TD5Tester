@@ -3,7 +3,11 @@ package com.mooo.hairyone.td5tester;
 public class Consts {
 
     // Log all modem status bytes or just when an error is detected ?
-    public static final boolean LOG_EVERY_MODEM_STATUS  = true;
+    public static final boolean LOG_EVERY_MODEM_STATUS  = false;
+    public static final boolean LOG_EVERY_READ = false;
+
+    public static final int SEND_REQUEST_DELAY      = 55;
+    public static final int READ_RESPONSE_TIMEOUT   = 500;
 
     // Get permission to use the USB system
     public static final String ACTION_USB_PERMISSION = "com.mooo.hairyone.td5tester.USB_PERMISSION";
@@ -18,6 +22,5 @@ public class Consts {
     public static final int DASHBOARD_SET_RPM                       = 1;
 
     public static final int RESPONSE_BUFFER_SIZE    = 512;
-    public static final int READ_RESPONSE_TIMEOUT   = 100;
 
 }

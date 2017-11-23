@@ -50,4 +50,10 @@ public  class Util {
         return String.format("%8s", Integer.toBinaryString(value & 0xFF)).replace(' ', '0');
     }
 
+    public static short bytes2short(byte hi_byte, byte lo_byte) {
+        // https://stackoverflow.com/questions/736815/2-bytes-to-short-java
+        https://henkelmann.eu/2011/02/a-curse-on-java-bitwise-operators/
+        return (short) (hi_byte << 8 | lo_byte & 0xFF);
+    }
+
 }

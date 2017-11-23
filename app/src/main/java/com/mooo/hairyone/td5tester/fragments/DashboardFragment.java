@@ -39,7 +39,7 @@ public class DashboardFragment extends Fragment {
         super.onStop();
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onDashboardEvent(DashboardEvent event) {
         int value = (int) event.value;
         switch (event.data_type) {
@@ -66,6 +66,14 @@ public class DashboardFragment extends Fragment {
         gRPM = (CircleProgressView) view.findViewById(R.id.gRPM);
         gVOLT = (CircleProgressView) view.findViewById(R.id.gVOLT);
         gMPH = (CircleProgressView) view.findViewById(R.id.gMPH);
+
+        gRPM.setDelayMillis(0);
+        gVOLT.setDelayMillis(0);
+        gMPH.setDelayMillis(0);
+
+        gRPM.setSeekModeEnabled(false);
+        gVOLT.setSeekModeEnabled(false);
+        gMPH.setSeekModeEnabled(false);
 
         return view;
     }
