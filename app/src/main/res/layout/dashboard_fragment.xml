@@ -28,16 +28,13 @@
                 android:layout_height="wrap_content"
                 android:padding="10sp"
                 CircleProgressView:cpv_autoTextSize="true"
-                CircleProgressView:cpv_barWidth="20sp"
+                CircleProgressView:cpv_value="5000"
                 CircleProgressView:cpv_maxValue="6000"
-                CircleProgressView:cpv_rimWidth="20sp"
-                CircleProgressView:cpv_seekMode="true"
-                CircleProgressView:cpv_showUnit="true"
                 CircleProgressView:cpv_unit="RPM"
+                CircleProgressView:cpv_showUnit="true"
                 CircleProgressView:cpv_unitPosition="bottom"
-                CircleProgressView:cpv_value="1000"
                 CircleProgressView:cpv_textMode="Value"
-                CircleProgressView:cpv_startAngle="90" />
+                CircleProgressView:cpv_startAngle="90"/>
         </LinearLayout>
 
         <LinearLayout
@@ -52,14 +49,11 @@
                 android:layout_height="wrap_content"
                 android:padding="10sp"
                 CircleProgressView:cpv_autoTextSize="true"
-                CircleProgressView:cpv_barWidth="20sp"
-                CircleProgressView:cpv_maxValue="130"
-                CircleProgressView:cpv_rimWidth="20sp"
-                CircleProgressView:cpv_seekMode="true"
-                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_value="95"
+                CircleProgressView:cpv_maxValue="120"
                 CircleProgressView:cpv_unit="MPH"
+                CircleProgressView:cpv_showUnit="true"
                 CircleProgressView:cpv_unitPosition="bottom"
-                CircleProgressView:cpv_value="70"
                 CircleProgressView:cpv_textMode="Value"
                 CircleProgressView:cpv_startAngle="90"/>
         </LinearLayout>
@@ -76,19 +70,15 @@
                 android:layout_height="wrap_content"
                 android:padding="10sp"
                 CircleProgressView:cpv_autoTextSize="true"
-                CircleProgressView:cpv_barWidth="20sp"
+                CircleProgressView:cpv_value="14.5"
                 CircleProgressView:cpv_maxValue="20"
-                CircleProgressView:cpv_rimWidth="20sp"
-                CircleProgressView:cpv_seekMode="true"
                 CircleProgressView:cpv_showUnit="true"
-                CircleProgressView:cpv_unit="Volt"
+                CircleProgressView:cpv_unit="VOLT"
                 CircleProgressView:cpv_unitPosition="bottom"
-                CircleProgressView:cpv_value="14.6"
                 CircleProgressView:cpv_textMode="Value"
                 CircleProgressView:cpv_startAngle="90"
                 CircleProgressView:cpv_decimalFormat="#0.0"/>
         </LinearLayout>
-
 
     </LinearLayout>
 

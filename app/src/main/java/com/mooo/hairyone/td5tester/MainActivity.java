@@ -26,13 +26,14 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mooo.hairyone.td5tester.R;
-import com.mooo.hairyone.td5tester.events.MessageEvent;
 import com.mooo.hairyone.td5tester.fragments.ConnectFragment;
 import com.mooo.hairyone.td5tester.fragments.DashboardFragment;
+import com.mooo.hairyone.td5tester.fragments.TemperatureFragment;
+
+import org.apache.log4j.Logger;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = MainActivity.class.getSimpleName();
+    Logger log = Log4jHelper.getLogger(this.getClass());
 
     private Toolbar toolbar;
     private TabLayout tabLayout;
@@ -42,13 +43,18 @@ public class MainActivity extends AppCompatActivity {
     public void onConfigurationChanged(Configuration newConfig){
         // https://stackoverflow.com/questions/4544534/the-xml-is-not-switching-when-device-orientation-change
         super.onConfigurationChanged(newConfig);
+        log.debug("");
         setContentView(R.layout.activity_main);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "onCreate()");
+        if(!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
+            Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler());
+        }
+        log.debug("-------------------------------------------");
+
         setContentView(R.layout.activity_main);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -67,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new ConnectFragment(), "Connect");
         adapter.addFragment(new DashboardFragment(), "Dashboard");
+        adapter.addFragment(new TemperatureFragment(), "Temperature");
         viewPager.setAdapter(adapter);
     }
 

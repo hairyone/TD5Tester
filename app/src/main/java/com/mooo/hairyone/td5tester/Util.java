@@ -1,31 +1,12 @@
 package com.mooo.hairyone.td5tester;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.hardware.usb.UsbConstants;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.support.v7.app.AppCompatActivity;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
-import android.view.View;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
-import java.util.HashMap;
-import java.util.Iterator;
+import com.mooo.hairyone.td5tester.events.MessageEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 public  class Util {
 
@@ -52,8 +33,16 @@ public  class Util {
 
     public static short bytes2short(byte hi_byte, byte lo_byte) {
         // https://stackoverflow.com/questions/736815/2-bytes-to-short-java
-        https://henkelmann.eu/2011/02/a-curse-on-java-bitwise-operators/
+        // https://henkelmann.eu/2011/02/a-curse-on-java-bitwise-operators/
         return (short) (hi_byte << 8 | lo_byte & 0xFF);
     }
+
+    public static void log_msg(String msg) {
+        EventBus.getDefault().post(new MessageEvent(msg));
+    }
+
+    //public static void log_data(byte[] data, int len, boolean is_tx) {
+    //    log_msg(String.format("%s %s", is_tx ? ">>" : "<<", Util.byte_array_to_hex(data, len)));
+    //}
 
 }

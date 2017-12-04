@@ -1,7 +1,12 @@
 package com.mooo.hairyone.td5tester.events;
 
 public class DashboardEvent {
-    public enum DATA_TYPE { RPM, BATTERY_VOLTAGE, VEHICLE_SPEED, COOLANT_TEMP };
+    public enum DATA_TYPE {
+        RPM, BATTERY_VOLTAGE, VEHICLE_SPEED,
+        COOLANT_TEMP, INLET_TEMP, EXTERNAL_TEMP, FUEL_TEMP,
+        ACC_TRACK_1, ACC_TRACK_2, ACC_TRACK_3, ACC_SUPPLY,
+        AMBIENT_PRESSURE, MANIFOLD_AIR_PRESSURE, AIR_FLOW
+    };
 
     public DATA_TYPE data_type;
     public double value;

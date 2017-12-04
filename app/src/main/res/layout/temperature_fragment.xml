@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:CircleProgressView="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.mooo.hairyone.td5tester.MainActivity"
+    android:padding="1sp"
+    android:orientation="horizontal">
+    <LinearLayout
+        android:layout_width="0sp"
+        android:layout_height="match_parent"
+        android:padding="1sp"
+        android:orientation="vertical"
+        android:layout_weight="1">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gCOOLANT_TEMP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="85"
+                CircleProgressView:cpv_maxValue="120"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="CT °C"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gINLET_TEMP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="30"
+                CircleProgressView:cpv_maxValue="120"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="IAT °C"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gFUEL_TEMP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="70"
+                CircleProgressView:cpv_maxValue="120"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="FUEL °C"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0sp"
+        android:layout_height="match_parent"
+        android:padding="1sp"
+        android:orientation="vertical"
+        android:layout_weight="1">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gAMBIENT_PRESSURE"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="100"
+                CircleProgressView:cpv_maxValue="120"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="AAP kPa"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gMANIFOLD_AIR_PRESSURE"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="120"
+                CircleProgressView:cpv_maxValue="200"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="MAP kPa"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0sp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <at.grabner.circleprogress.CircleProgressView
+                android:id="@+id/gAIR_FLOW"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10sp"
+                CircleProgressView:cpv_autoTextSize="true"
+                CircleProgressView:cpv_value="450"
+                CircleProgressView:cpv_maxValue="700"
+                CircleProgressView:cpv_showUnit="true"
+                CircleProgressView:cpv_unit="MAF kg/h"
+                CircleProgressView:cpv_unitPosition="bottom"
+                CircleProgressView:cpv_textMode="Value"
+                CircleProgressView:cpv_startAngle="90"/>
+        </LinearLayout>
+    </LinearLayout>
+
+
+
+
+
+</LinearLayout>
