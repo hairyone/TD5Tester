@@ -41,8 +41,10 @@ public  class Util {
         EventBus.getDefault().post(new MessageEvent(msg));
     }
 
-    //public static void log_data(byte[] data, int len, boolean is_tx) {
-    //    log_msg(String.format("%s %s", is_tx ? ">>" : "<<", Util.byte_array_to_hex(data, len)));
-    //}
+
+    public static int get_bit(byte value, int position)
+    {
+        return (value >> position) & 1;
+    }
 
 }

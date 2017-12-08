@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log4jHelper.configure();
         if(!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler());
         }
@@ -60,9 +61,13 @@ public class MainActivity extends AppCompatActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //getSupportActionBar().setDisplayShowHomeEnabled(false);
+        //getSupportActionBar().setDisplayShowTitleEnabled(true);
+        //getSupportActionBar().setDisplayUseLogoEnabled(true);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
+        // https://stackoverflow.com/questions/8348707/prevent-viewpager-from-destroying-off-screen-views
+        viewPager.setOffscreenPageLimit(2);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -72,8 +77,8 @@ public class MainActivity extends AppCompatActivity {
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new ConnectFragment(), "Connect");
-        adapter.addFragment(new DashboardFragment(), "Dashboard");
         adapter.addFragment(new TemperatureFragment(), "Temperature");
+        adapter.addFragment(new DashboardFragment(), "Dashboard");
         viewPager.setAdapter(adapter);
     }
 
