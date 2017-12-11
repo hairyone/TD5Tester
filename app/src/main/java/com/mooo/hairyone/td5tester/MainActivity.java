@@ -1,17 +1,6 @@
 package com.mooo.hairyone.td5tester;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.content.res.Configuration;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -19,16 +8,14 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.widget.ImageButton;
-import android.widget.TextView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.mooo.hairyone.td5tester.fragments.ConnectFragment;
 import com.mooo.hairyone.td5tester.fragments.DashboardFragment;
-import com.mooo.hairyone.td5tester.fragments.TemperatureFragment;
+import com.mooo.hairyone.td5tester.fragments.TemperatureAndPressure;
 
 import org.apache.log4j.Logger;
 
@@ -50,11 +37,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log4jHelper.configure();
+        String log_filename = MainActivity.this.getExternalFilesDir(null).getAbsolutePath() + File.separator + "td5tester.log";
+        Log4jHelper.configure(log_filename);
         if(!(Thread.getDefaultUncaughtExceptionHandler() instanceof CustomExceptionHandler)) {
             Thread.setDefaultUncaughtExceptionHandler(new CustomExceptionHandler());
         }
         log.debug("-------------------------------------------");
+        log.info(String.format("logging to %s", log_filename));
 
         setContentView(R.layout.activity_main);
 
@@ -67,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         // https://stackoverflow.com/questions/8348707/prevent-viewpager-from-destroying-off-screen-views
-        viewPager.setOffscreenPageLimit(2);
+        viewPager.setOffscreenPageLimit(3);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -77,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new ConnectFragment(), "Connect");
-        adapter.addFragment(new TemperatureFragment(), "Temperature");
         adapter.addFragment(new DashboardFragment(), "Dashboard");
+        adapter.addFragment(new TemperatureAndPressure(), "Temp & Pressure");
         viewPager.setAdapter(adapter);
     }
 

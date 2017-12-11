@@ -12,6 +12,7 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,7 @@ import com.mooo.hairyone.td5tester.Consts;
 import com.mooo.hairyone.td5tester.FTDI;
 import com.mooo.hairyone.td5tester.FaultCodes;
 import com.mooo.hairyone.td5tester.Log4jHelper;
+import com.mooo.hairyone.td5tester.LogRecord;
 import com.mooo.hairyone.td5tester.R;
 import com.mooo.hairyone.td5tester.Requests;
 import com.mooo.hairyone.td5tester.Util;
@@ -38,13 +40,17 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import butterknife.Unbinder;
 
 public class ConnectFragment extends BaseFragment {
 
@@ -411,7 +417,7 @@ public class ConnectFragment extends BaseFragment {
                 int key = generate_key(seed);
                 mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) ((key & 0xFFFF) >>> 8);
                 mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
-                mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN);
+                mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN); // && get_pid(Requests.RequestPidEnum.START_FUELLING);
             }
             Util.log_msg(String.format("FASTINIT %s", mFastInitCompleted ? "OK" : "FAILED"));
             if (mFastInitCompleted) {
@@ -604,60 +610,119 @@ public class ConnectFragment extends BaseFragment {
 
     private void dashboard() {
         int pid_count = 0;
-        Util.log_msg("dashboard starting");
-        try {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+        String csv_filename = this.getActivity().getExternalFilesDir(null) + File.separator + String.format("td5tester_%s.csv", simpleDateFormat.format(new Date()));
+        Util.log_msg(String.format("dashboard starting, logging to %s", csv_filename));
+        LogRecord logRecord = new LogRecord();
+        simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        try (
+            PrintWriter csv_filehandle = new PrintWriter(new FileOutputStream(new File(csv_filename), true))
+        ) {
             while (mDashboardRunning) {
                 if (mFastInitCompleted) {
                     if (get_pid(Requests.RequestPidEnum.ENGINE_RPM)) {
                         // 04 61 09 [03 06] 77
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, Util.bytes2short(mReadBuffer[3], mReadBuffer[4])));
+                        logRecord.EngineRpm = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, logRecord.EngineRpm));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.BATTERY_VOLTAGE)) {
                         // 06 61 10 [36 2E] 35 FA 0A
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, Util.bytes2short(mReadBuffer[3], mReadBuffer[4]) / 1000.0));
+                        logRecord.BatteryVoltage = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE,  logRecord.BatteryVoltage / 1000.0));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.VEHICLE_SPEED)) {
                         // 03 61 0D [00] 71
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, mReadBuffer[3] * 0.621371));
+                        logRecord.VehicleSpeed = mReadBuffer[3];
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, logRecord.VehicleSpeed * 0.621371));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.TEMPERATURES)) {
-                        // 12 61 1A [0C 80] 06 A4 [0C 52] 07 59 [10 88] 00 04 [0C 06] 08 A6 DD
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.COOLANT_TEMP,  (Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4]) - 2732) / 10.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.INLET_TEMP,    (Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8]) - 2732) / 10.0));
                         // The sensor on the airbox is AAP(ambient air pressure and temp) sensor and it has temp reading only on EU3 models.
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.EXTERNAL_TEMP, (Util.bytes2short(mReadBuffer[11], mReadBuffer[12]) - 2732) / 10.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_TEMP,     (Util.bytes2short(mReadBuffer[15], mReadBuffer[16]) - 2732) / 10.0));
+                        // 12 61 1A [0C 80] 06 A4 [0C 52] 07 59 [10 88] 00 04 [0C 06] 08 A6 DD
+                        logRecord.CoolantTemperature = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        logRecord.InletTemperature = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
+                        logRecord.ExternalTemperature = Util.bytes2short(mReadBuffer[11], mReadBuffer[12]);
+                        logRecord.FuelTemperature = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.COOLANT_TEMP, (logRecord.CoolantTemperature - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.INLET_TEMP, (logRecord.InletTemperature - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.EXTERNAL_TEMP, (logRecord.ExternalTemperature - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_TEMP, (logRecord.FuelTemperature - 2732) / 10.0));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.THROTTLE_POSITION)) {
                         // 0A 61 1B [01 68] [12 1E] [00 00] [13 82] B4
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_1, Util.bytes2short(mReadBuffer[3], mReadBuffer[ 4]) / 1000.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_2, Util.bytes2short(mReadBuffer[5], mReadBuffer[ 6]) / 1000.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_3, Util.bytes2short(mReadBuffer[7], mReadBuffer[ 8]) / 1000.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_SUPPLY,  Util.bytes2short(mReadBuffer[9], mReadBuffer[10]) / 1000.0));
+                        logRecord.AcceleratorTrack1 = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        logRecord.AcceleratorTrack2 = Util.bytes2short(mReadBuffer[5], mReadBuffer[6]);
+                        logRecord.AcceleratorTrack3 = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
+                        logRecord.AcceleratorSupply = Util.bytes2short(mReadBuffer[9], mReadBuffer[10]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_1,  logRecord.AcceleratorTrack1 / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_2, logRecord.AcceleratorTrack2 / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_3, logRecord.AcceleratorTrack3 / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_SUPPLY, logRecord.AcceleratorSupply / 1000.0));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.AMBIENT_PRESSURE)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AMBIENT_PRESSURE, Util.bytes2short(mReadBuffer[3], mReadBuffer[4]) / 100.0));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.???, Util.bytes2short(mReadBuffer[5], mReadBuffer[ 6]) / 100.0));
+                        logRecord.AmbientPressure = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        // logRecord.AmbientPressureRaw = Util.bytes2short(mReadBuffer[5], mReadBuffer[6]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AMBIENT_PRESSURE, logRecord.AmbientPressure / 100.0));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AMBIENT_PRESSURE2, logRecord.AmbientPressureRaw / 100.0));
                         pid_count++;
                     }
                     if (get_pid(Requests.RequestPidEnum.MAP_MAF)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.MANIFOLD_AIR_PRESSURE, Util.bytes2short(mReadBuffer[3], mReadBuffer[ 4]) / 100.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AIR_FLOW, Util.bytes2short(mReadBuffer[7], mReadBuffer[ 8])));
+                        logRecord.ManifoldAirPressure = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        logRecord.ManifoldAirFlow = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
+
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.MANIFOLD_AIR_PRESSURE, logRecord.ManifoldAirPressure / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AIR_FLOW, logRecord.ManifoldAirFlow  / 10.0));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.POWER_BALANCE)) {
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_1, Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4])));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_2, Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6])));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_3, Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8])));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_4, Util.bytes2short(mReadBuffer[ 9], mReadBuffer[10])));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_5, Util.bytes2short(mReadBuffer[11], mReadBuffer[12])));
-                        pid_count++;
+                    //if (get_pid(Requests.RequestPidEnum.POWER_BALANCE)) {
+                    //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_1, Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4])));
+                    //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_2, Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6])));
+                    //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_3, Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8])));
+                    //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_4, Util.bytes2short(mReadBuffer[ 9], mReadBuffer[10])));
+                    //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_5, Util.bytes2short(mReadBuffer[11], mReadBuffer[12])));
+                    //    pid_count++;
+                    //}
+                    if (get_pid(Requests.RequestPidEnum.GET_FUEL_DEMAND)) {
+                        logRecord.FuelDemand1 = Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4]);
+                        logRecord.FuelDemand2 = Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6]);
+                        logRecord.FuelDemand3 = Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8]);
+                        logRecord.FuelDemand4 = Util.bytes2short(mReadBuffer[ 9], mReadBuffer[10]);
+                        logRecord.FuelDemand5 = Util.bytes2short(mReadBuffer[11], mReadBuffer[12]);
+                        logRecord.FuelDemand6 = Util.bytes2short(mReadBuffer[13], mReadBuffer[14]);
+                        logRecord.FuelDemand7 = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
+                        logRecord.FuelDemand8 = Util.bytes2short(mReadBuffer[17], mReadBuffer[18]);
+
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_1, logRecord.FuelDemand1));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_2, logRecord.FuelDemand2));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_3, logRecord.FuelDemand3));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_4, logRecord.FuelDemand4));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_5, logRecord.FuelDemand5));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_6, logRecord.FuelDemand6));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_7, logRecord.FuelDemand7));
+                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_8, logRecord.FuelDemand8));
                     }
+
+                    csv_filehandle.println(String.format("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+                        simpleDateFormat.format(new Date()),
+                        logRecord.EngineRpm, logRecord.BatteryVoltage, logRecord.VehicleSpeed,
+                        logRecord.CoolantTemperature, logRecord.ExternalTemperature, logRecord.InletTemperature, logRecord.FuelTemperature,
+                        logRecord.AcceleratorTrack1, logRecord.AcceleratorTrack2, logRecord.AcceleratorTrack3, logRecord.AcceleratorSupply,
+                        logRecord.AmbientPressure, logRecord.ManifoldAirPressure, logRecord.ManifoldAirFlow,
+                        logRecord.FuelDemand1, logRecord.FuelDemand2, logRecord.FuelDemand3, logRecord.FuelDemand4,
+                        logRecord.FuelDemand5, logRecord.FuelDemand6, logRecord.FuelDemand7, logRecord.FuelDemand8
+                    ));
+                    csv_filehandle.flush();
+
                 } else {
                     Util.log_msg("dashboard cannot start until FASTINIT has been successful!");
                     break;

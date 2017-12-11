@@ -1,5 +1,7 @@
 package com.mooo.hairyone.td5tester;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Environment;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -13,11 +15,11 @@ public class Log4jHelper {
         return Logger.getLogger(clazz);
     }
 
-    public static void configure() {
+    public static void configure(String log_filename) {
         // https://github.com/eetac/android-logging-log4j/blob/master/src/test/java/de/mindpipe/android/logging/log4j/example/ConfigureLog4J.java
         final LogConfigurator logConfigurator = new LogConfigurator();
 
-        logConfigurator.setFileName(Environment.getExternalStorageDirectory() + File.separator + "td5tester.log");
+        logConfigurator.setFileName(log_filename);
         logConfigurator.setRootLevel(Level.DEBUG);
         // logConfigurator.setLevel("com.mooo.hairyone.td5tester.fragments.ConnectFragment", Level.DEBUG);
         logConfigurator.setUseFileAppender(true);

@@ -49,7 +49,7 @@ public class Requests {
         request.put(RequestPidEnum.FAULT_CODES,          new Request((byte) 39, "FAULT_CODES",       new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x3B, (byte) 0x00 }));
         request.put(RequestPidEnum.CLEAR_FAULTS,         new Request((byte)  4, "CLEAR_FAULTS",      new byte[] { (byte) 0x14, (byte) 0x31, (byte) 0xDD, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 }));
         request.put(RequestPidEnum.GET_INPUTS,           new Request((byte)  6, "GET_INPUTS",        new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1E, (byte) 0x00 }));
-        request.put(RequestPidEnum.GET_FUEL_DEMAND,      new Request((byte)  6, "GET_FUEL_DEMAND",   new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1D, (byte) 0x00 }));
+        request.put(RequestPidEnum.GET_FUEL_DEMAND,      new Request((byte) 22, "GET_FUEL_DEMAND",   new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1D, (byte) 0x00 }));
     }
 
 }

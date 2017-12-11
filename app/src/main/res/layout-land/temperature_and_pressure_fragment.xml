@@ -14,13 +14,15 @@
         android:layout_height="0sp"
         android:padding="1sp"
         android:orientation="horizontal"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:baselineAligned="false">
         <LinearLayout
             android:layout_width="0sp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="NestedWeights">
             <at.grabner.circleprogress.CircleProgressView
                 android:id="@+id/gCOOLANT_TEMP"
                 android:layout_width="wrap_content"
@@ -91,13 +93,15 @@
         android:layout_height="0sp"
         android:padding="1sp"
         android:orientation="horizontal"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:baselineAligned="false">
         <LinearLayout
             android:layout_width="0sp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="NestedWeights">
             <at.grabner.circleprogress.CircleProgressView
                 android:id="@+id/gAMBIENT_PRESSURE"
                 android:layout_width="wrap_content"
@@ -112,7 +116,7 @@
                 CircleProgressView:cpv_unit="AAP kPa"
                 CircleProgressView:cpv_unitPosition="bottom"
                 CircleProgressView:cpv_textMode="Value"
-                CircleProgressView:cpv_startAngle="90" />
+                CircleProgressView:cpv_startAngle="90"/>
         </LinearLayout>
         <LinearLayout
             android:layout_width="0sp"
@@ -129,7 +133,7 @@
                 CircleProgressView:cpv_barWidth="10sp"
                 CircleProgressView:cpv_rimWidth="10sp"
                 CircleProgressView:cpv_value="120"
-                CircleProgressView:cpv_maxValue="200"
+                CircleProgressView:cpv_maxValue="250"
                 CircleProgressView:cpv_showUnit="true"
                 CircleProgressView:cpv_unit="MAP kPa"
                 CircleProgressView:cpv_unitPosition="bottom"

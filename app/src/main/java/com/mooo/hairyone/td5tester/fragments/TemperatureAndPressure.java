@@ -1,25 +1,17 @@
 package com.mooo.hairyone.td5tester.fragments;
 
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
 import com.mooo.hairyone.td5tester.Log4jHelper;
 import com.mooo.hairyone.td5tester.R;
 import com.mooo.hairyone.td5tester.events.DashboardEvent;
 
 import org.apache.log4j.Logger;
-import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import at.grabner.circleprogress.CircleProgressView;
 import butterknife.BindView;
-import butterknife.Unbinder;
 
-public class TemperatureFragment extends BaseFragment {
+public class TemperatureAndPressure extends BaseFragment {
 
     Logger log = Log4jHelper.getLogger(this.getClass());
 
@@ -30,7 +22,7 @@ public class TemperatureFragment extends BaseFragment {
     @BindView(R.id.gAIR_FLOW) CircleProgressView gAIR_FLOW;
     @BindView(R.id.gMANIFOLD_AIR_PRESSURE) CircleProgressView gMANIFOLD_AIR_PRESSURE;
 
-    public TemperatureFragment() { /* Required empty public constructor*/ }
+    public TemperatureAndPressure() { /* Required empty public constructor*/ }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onDashboardEvent(DashboardEvent event) {
@@ -57,6 +49,6 @@ public class TemperatureFragment extends BaseFragment {
         }
     }
 
-    @Override protected int getFragmentLayout() { return R.layout.temperature_fragment; }
+    @Override protected int getFragmentLayout() { return R.layout.temperature_and_pressure_fragment; }
 
 }
