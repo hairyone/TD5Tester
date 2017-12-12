@@ -12,6 +12,40 @@ Developed with Android Studio.
 ![DASHBOARD](/docs/DashboardTab.png)
 ![TEMPERATURE](/docs/TemperatureTab.png)
 
+## Viewing the log and CSV files
+I use the Log Viewer app from here https://play.google.com/store/apps/details?id=com.apptiva.logviewer&hl=en_GB to view the log files.
+The app will write up to 30 log files up to 256kB in size (any larger and the log viewer struggles to load them).
+
+A CSV file is started each time the Dashboard feature is started.
+
+The CSV file contains the raw data values in the units reported by the ECU, the field order is:
+
+|Column              |Units      |Conversion                 |
+|--------------------|-----------|---------------------------|
+|EngineRpm           |RPM        |raw_value                  |
+|BatteryVoltage      |Volts      |raw_value / 1000           |
+|VehicleSpeed        |MPH        |raw_value * 0.621371)      |
+|CoolantTemperature  |deg C      |(raw_value - 2732) / 10)   |
+|ExternalTemperature |deg C      |(raw_value - 2732) / 10)   |
+|InletTemperature    |deg C      |(raw_value - 2732) / 10)   |
+|FuelTemperature     |deg C      |(raw_value - 2732) / 10)   |
+|AcceleratorTrack1   |Volts      |raw_value / 1000           |
+|AcceleratorTrack2   |Volts      |raw_value / 1000           |
+|AcceleratorTrack3   |%          |raw_value / 100            |
+|AcceleratorSupply   |Volts      |raw_value / 1000           |
+|AmbientPressure     |kPa        |raw_value / 100            |
+|ManifoldAirPressure |kPa        |raw_value / 100            |
+|ManifoldAirFlow     |kg/h       |raw_value / 10             |
+|Driver Demand       |mg/stroke  |raw_value / 100            |
+|MAF Air mass?       |mg/stroke  |raw_value / 10             |
+|MAP Air mass?       |mg/stroke  |raw_value / 10             |
+|Injection quantity  |mg/stroke  |raw_value / 100            |
+|FuelDemand5         |?          |raw_value / 100            |
+|Smoke limit?        |mg/stroke  |raw_value / 100            |
+|Torque limit?       |mg/stroke  |raw_value / 100            |
+|Idle demand?        |mg/stroke  |raw_value / 100            |
+
+![LOGVIEWER](/docs/LogViewer.png)
 
 ## Graphs 
 These graphs were created using the CSV file that is saved whilst the dashboard feature is running. The graphs were created using Google Sheets.
@@ -21,11 +55,22 @@ These graphs were created using the CSV file that is saved whilst the dashboard 
 ![RPM Vs IQ](/docs/RPMvsIQ.png)
 ![DEMAND Vs IQ](/docs/DEMANDvsIQ.png)
 
+## Purchases
+
+* This is the super cheap MAF (£20) I purchased to replace my defective one. All I will say is it works, the car drives a little better. Most people would recommend you buy genuine and cheap MAFs generally get bad reviews.
+https://www.ebay.co.uk/itm/AIR-FLOW-METER-MASS-FOR-LAND-ROVER-DEFENDER-DISCOVERY-II-FREELANDER-5WK9607-NEW/132165517764
+
+* This is the USB VAG COM cable I am using, the listing says is has a genuine FTDI chip (there are many counterfeits), but it works so it is good enough for me.
+http://www.ebay.co.uk/itm/VAG-KKL-USB-COM-OBD-2-Diagnostic-Cable-for-AUDI-VW-Skoda-Seat-OBDII-EOBD-FT232RL/322814060072
+
+* My USB OTG cable looks like the one below, I ought to replace it with one that allows charging at the same time.
+http://www.ebay.co.uk/itm/90-Degree-Right-Angled-USB-C-USB-3-1-Type-C-Male-to-A-Female-OTG-Data-Cable/231822737522. 
+
 ## Credits
 
 Much of the above would not have been possible without the research done by the people below:
 
-* Java library that deals with a function to strip the modem status bytes: https://github.com/mik3y/usb-serial-for-android/issues/4
+* Java library that showed me an easy way to strip the modem status bytes from the FTDI receive buffer response: https://github.com/mik3y/usb-serial-for-android/issues/4
 
 * Using a VAG COM KKL cable with Python: http://www.discotd5.com/data-logging/desktop-diagnostics
 
@@ -33,6 +78,8 @@ Much of the above would not have been possible without the research done by the 
 
 * Much information refarding the data and TD5 tuning http://www.discotd5.com
 
-* A Python basec project with information on many of the TD5 PID requests https://github.com/EA2EGA/Ekaitza_Itzali
+* A Python based project with information on many of the TD5 PID requests https://github.com/EA2EGA/Ekaitza_Itzali
+
+
 
 
