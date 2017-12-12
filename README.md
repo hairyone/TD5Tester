@@ -1,5 +1,7 @@
 # TD5Tester
 
+![THEKIT](/docs/TheKit.jpg)
+
 A simple Android app to communicate with the Land Rover TD5 engine ECU.
 
 To use this you will need a VAG COM KKL usb -> OBD2 cable that uses an FTDI chip.
