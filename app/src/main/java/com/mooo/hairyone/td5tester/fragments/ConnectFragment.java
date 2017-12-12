@@ -95,7 +95,7 @@ public class ConnectFragment extends BaseFragment {
         if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
             UsbDevice usbDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
             Util.log_msg(String.format("usb_detached=%s", usbDevice.getProductName()));
-            if (usbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
+            if (usbDevice != null && mUsbDevice != null && usbDevice.getDeviceName().equals(mUsbDevice.getDeviceName())) {
                 usb_close();
             }
         }
@@ -246,7 +246,7 @@ public class ConnectFragment extends BaseFragment {
 
     private boolean usb_open(){
         EventBus.getDefault().post(new BusyEvent());
-        Util.log_msg("connecting");
+        Util.log_msg("USB connecting ...");
 
         boolean result = false;
         mFastInitCompleted = false;
@@ -324,7 +324,7 @@ public class ConnectFragment extends BaseFragment {
         }
 
         Util.log_msg(String.format("mUsbInterface=%s", mUsbInterface.toString().replaceAll("(\\r|\\n)", "")));
-
+        Util.log_msg("USB connected!");
         mUsbDeviceConnection = manager.openDevice(mUsbDevice);
         if (mUsbDeviceConnection != null) {
             mUsbDeviceConnection.claimInterface(mUsbInterface, true);
@@ -343,7 +343,7 @@ public class ConnectFragment extends BaseFragment {
 
     private void usb_close() {
         EventBus.getDefault().post(new BusyEvent());
-        Util.log_msg("disconnecting");
+        Util.log_msg("USB disconnecting ...");
 
         if (mUsbInterface != null) {
             mUsbDeviceConnection.releaseInterface(mUsbInterface);
@@ -358,6 +358,7 @@ public class ConnectFragment extends BaseFragment {
         mUsbEndpointIn = null;
         mUsbEndpointOut = null;
 
+        Util.log_msg("USB disconnected!");
         EventBus.getDefault().post(new NotConnectedEvent());
     }
 
