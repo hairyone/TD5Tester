@@ -12,6 +12,13 @@ Developed with Android Studio.
 ![DASHBOARD](/docs/DashboardTab.png)
 ![TEMPERATURE](/docs/TemperatureTab.png)
 
+## Viewing the log and CSV files
+I use the Log Viewer app from here https://play.google.com/store/apps/details?id=com.apptiva.logviewer&hl=en_GB to view the log files.
+The app will write up to 30 log files up to 256kB in size (any larger and the log viewer struggles to load them).
+
+A CSV file is started each time the Dashboard feature is started.
+
+![LOGVIEWER](/docs/LogViewer.png)
 
 ## Graphs 
 These graphs were created using the CSV file that is saved whilst the dashboard feature is running. The graphs were created using Google Sheets.
@@ -20,6 +27,14 @@ These graphs were created using the CSV file that is saved whilst the dashboard 
 ![RPM Vs MAF](/docs/RPMvsMAF.png)
 ![RPM Vs IQ](/docs/RPMvsIQ.png)
 ![DEMAND Vs IQ](/docs/DEMANDvsIQ.png)
+
+## Purchases
+
+* This is the super cheap MAF I purchased to replace my defective one all I can say is it works, the car drives a little better but cheap MAFs generally get bad reviews. https://www.ebay.co.uk/itm/AIR-FLOW-METER-MASS-FOR-LAND-ROVER-DEFENDER-DISCOVERY-II-FREELANDER-5WK9607-NEW/132165517764
+
+* This is the USB VAG COM cable I am using: http://www.ebay.co.uk/itm/VAG-KKL-USB-COM-OBD-2-Diagnostic-Cable-for-AUDI-VW-Skoda-Seat-OBDII-EOBD-FT232RL/322814060072
+
+* My USB OTG cable looks like this: http://www.ebay.co.uk/itm/90-Degree-Right-Angled-USB-C-USB-3-1-Type-C-Male-to-A-Female-OTG-Data-Cable/231822737522. I ought to replace it with one tht allows charging at the same time.
 
 ## Credits
 
@@ -33,6 +48,8 @@ Much of the above would not have been possible without the research done by the 
 
 * Much information refarding the data and TD5 tuning http://www.discotd5.com
 
-* A Python basec project with information on many of the TD5 PID requests https://github.com/EA2EGA/Ekaitza_Itzali
+* A Python based project with information on many of the TD5 PID requests https://github.com/EA2EGA/Ekaitza_Itzali
+
+
 
 
