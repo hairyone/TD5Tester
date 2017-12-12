@@ -8,8 +8,18 @@ Developed with Android Studio.
 
 ## Screenshots
 
-![FASTINIT](https://lh3.googleusercontent.com/WkUe9P2swMZuSiHzy3FfCYPSm91Bq_X0smcXaMF2IWNcZ7dMpyra7LKK__fXz0hEZIeu5w7xeW2aLzjl2a9BhL7Vu9hUyj3sKiOuP2AYFtAO4pI2sy8Wh_NWMEjVIvQTWViYlk3iHM_ppHWZzdprMwJ3ssxQFvd1WzsH1Cd7hp8UgjdAyDRJ3Tve3PmlnzXnmSlQ-boFeqRpDttTR5Z7x_v7sTS0bFWP5sQNe4LW81pOp0PUHBJTI_2wmmgxCtDPtERwtBm1F6cDOjH8wydMAOUZPMfhEgQXn5vs9sVEsReCUGSyjYcHQ5Qtq2y9Apc4HSveFbaHhfPcOPhPKNeMUexTmKdvIiPbk2Cu-yvMefr-LZyN7DVkekmCoHvnDQeYPJRmfb2z55-8bUZ4wFp7IONCJk-F4JhMlSiq8Hg31pRG_ZFiPciT-KB8kgTGDrFeItsx4a0jvGeNmMKoD_jgJ4aN-dPZAXvV5ND27PI15WuxHXBLVpL-ofPVEUlxA0LZiz3siTKkkpRzLbNBhXqA0_nLEDCAhWuBXy3ozn2RSiY2TEc-SbZcH1qicRCk4V4xFGktFNP0FbzXd79AhGIf8u932nkMSXHZFYIkqpGpzfc=s512-no-tmp.jpg) ![DASHBOARD](https://lh3.googleusercontent.com/K1pZLA7dUXiL36S_kb4AdgOhIGKlBOyprJOAYgFNQGlKxv-WBrLiabIpPzlZKX1i__etl1TuXxSiTZobN5bGLWRmSX1cRlRcS3NeF_SQ6G8gTpoWfyNbmSu-uDojvLcqvtXG6r-H9JOAacIiVC1Dbl-0pXmDYW0QOUquOe5XfwNMerm-pe0qSXrgQkvp7bpUX7OVflMjLhF5dfCG7zGaYEDXyWyZCHIBngEX-hH0yLg_gIFHmh3JDALy8bLEUKvlo5gbIALaC2eEg4COHr5mYRHP9RfOaf_NGS82oWmhyC7z3y0dpawJhEAyHqrx6dyiJ1iZ06bod1FpwJqdar1QHrQnrrtlJXdPch8A7bRtb4u3LX9SlGHoa7WNV9nZ4eNF-0B_daB4MMTgd_x9Jiwhwm6JTJ8CN4gr3Y3SorFS5I6ZGWmiqCsO8aMsc_Tjr_Hq-IS8tOkd73sx1q87SszJqKwqMwROcg1VpzySD1IECn3ZiOxDI3IQcvxBjm3bq0gU-ukwl5XTuSMDMVGsVKzp-JRljDUIyspz9VxgD1Pxij21CBhMrjmkzKC4ZiJOj395OLgeSpoN_dLYnulfba6yEaXa1APzglCQjnBXhUiwH4o=s512-no-tmp.jpg) ![TEMPS](https://lh3.googleusercontent.com/gM2WiQQYOqZeSkVwtbzqtBYNItx7fpZVxVakU5uJ5-Flpx0VnBi0oaEOV-XxVuj2sK7z2BRs-qCmm6QrqvyeicT9aWVnHsmCWebqIWUc1hbGLRO4rczzISyqMtfMNuohApwUQ2TfJYeF7sL2aWO4I7ji5ctuxRxbgsSSUnfX1r08RHRGNCZvoR3XGBXBv8rW3AZJE-tthlFNaHWzmY79AuiO1jyNhoyEMfldlUr9iGA52N8d2Z06fy7XGcznyGZH4UEbyujGn5Q--yl14aFOnpWvojMMEMIiOpxfzSpj2XA3cuyHBhkGZT6JtgQQcM6uaVPkd1UnBM4g6W8as6IxFzNVxY1koyZyWKUNLpKozTE1wC3axEP1CpB7MwUI36nIA9pqKfGmwamE3QQznUDZ5hRma3UALVxeo2uWr0qWXcwJ17uyAdpHylcy9BR5LXohboQR4Z5RbvyiB4yLjkq5TDILB-N4mGCIIM5Z1CRpry0me4DSrKMIFmwff_y2UbUYOElPkdrDQGjgvTtsSvNfRYl7remVM3BiAQN-xg-7zvHS3vAtp0g0phUSYa6r34bcZpYA_CuWOfUT3QLWB-v5ZQoqsPsMzGxfkbfCld36NBI=s512-no-tmp.jpg)
+![CONNECT](/docs/ConnectTab.png)
+![DASHBOARD](/docs/DashboardTab.png)
+![TEMPERATURE](/docs/TemperatureTab.png)
 
+
+## Graphs 
+These graphs were created using the CSV file that is saved whilst the dashboard feature is running. The graphs were created using Google Sheets.
+
+![RPM Vs SPEED](/docs/RPMvsSPEED.png)
+![RPM Vs MAF](/docs/RPMvsMAF.png)
+![RPM Vs IQ](/docs/RPMvsIQ.png)
+![DEMAND Vs IQ](/docs/DEMANDvsIWQ.png)
 
 ## Credits
 
@@ -20,4 +30,9 @@ Much of the above would not have been possible without the research done by the 
 * Using a VAG COM KKL cable with Python: http://www.discotd5.com/data-logging/desktop-diagnostics
 
 * How to communicate with the FTDI chip using controlTransfer(), it also contains the only notes I have found showing how the modem status bytes should be interpreted: https://github.com/eblot/pyftdi
+
+* Much information refarding the data and TD5 tuning http://www.discotd5.com
+
+* A Python basec project with information on many of the TD5 PID requests https://github.com/EA2EGA/Ekaitza_Itzali
+
 
