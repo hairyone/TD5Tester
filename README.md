@@ -19,7 +19,7 @@ These graphs were created using the CSV file that is saved whilst the dashboard 
 ![RPM Vs SPEED](/docs/RPMvsSPEED.png)
 ![RPM Vs MAF](/docs/RPMvsMAF.png)
 ![RPM Vs IQ](/docs/RPMvsIQ.png)
-![DEMAND Vs IQ](/docs/DEMANDvsIWQ.png)
+![DEMAND Vs IQ](/docs/DEMANDvsIQ.png)
 
 ## Credits
 
