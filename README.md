@@ -60,7 +60,7 @@ These graphs were created using the CSV file that is saved whilst the dashboard 
 
 ## Purchases
 
-* This is the super cheap MAF (£20) I purchased to replace my defective one. All I will say is it works, the car drives a little better. Most people would recommend you buy genuine and cheap MAFs generally get bad reviews.
+* This is the super cheap MAF (£20) I purchased to replace my defective one. All I will say is it works, the car drives a little better. Most people would recommend you buy genuine and cheap MAFs generally get bad reviews. If you examine the MAPNAF vs ROM chart above you will see that the plot for the MAF has more scattering of the points. I think I have noticed that the initial idle readings when the engine is cold are higher than when engine is warmed up, this shows up as the two horizontal lines of red dots at low RPM.
 https://www.ebay.co.uk/itm/AIR-FLOW-METER-MASS-FOR-LAND-ROVER-DEFENDER-DISCOVERY-II-FREELANDER-5WK9607-NEW/132165517764
 
 * This is the USB VAG COM cable I am using, the listing says is has a genuine FTDI chip (there are many counterfeits), but it works so it is good enough for me.
