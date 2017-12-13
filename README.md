@@ -52,6 +52,7 @@ The CSV file contains the raw data values in the units reported by the ECU, the 
 ## Graphs 
 These graphs were created using the CSV file that is saved whilst the dashboard feature is running. The graphs were created using Google Sheets.
 
+![MAPMAF Vs RPM](/docs/MAPMAFvsRPM.png)
 ![RPM Vs SPEED](/docs/RPMvsSPEED.png)
 ![RPM Vs MAF](/docs/RPMvsMAF.png)
 ![RPM Vs IQ](/docs/RPMvsIQ.png)
