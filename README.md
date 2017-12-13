@@ -43,8 +43,8 @@ The CSV file contains the raw data values in the units reported by the ECU, the 
 |MAP Air mass?       |mg/stroke  |raw_value / 10             |
 |Injection quantity  |mg/stroke  |raw_value / 100            |
 |FuelDemand5         |?          |raw_value / 100            |
-|Smoke limit?        |mg/stroke  |raw_value / 100            |
 |Torque limit?       |mg/stroke  |raw_value / 100            |
+|Smoke  limit?       |mg/stroke  |raw_value / 100            |
 |Idle demand?        |mg/stroke  |raw_value / 100            |
 
 ![LOGVIEWER](/docs/LogViewer.png)
