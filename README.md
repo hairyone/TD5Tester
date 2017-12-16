@@ -58,6 +58,20 @@ These graphs were created using the CSV file that is saved whilst the dashboard 
 ![RPM Vs IQ](/docs/RPMvsIQ.png)
 ![DEMAND Vs IQ](/docs/DEMANDvsIQ.png)
 
+## TODO
+
+* Add display of injector config after logged faults
+* Add display of MAP_VARIANT info
+* Add WGM_DUTY_RATIO and EGR_MODULE to CSV file
+* Add another screen to loop and show GET_INPUTS PID data, e.g. array of indicators that illuminate when input active (brake pedal pressed, cruise control, etc.)
+* Add a Menu for:
+  * Preferences: logging level, csv file on|off, GPS on|off
+  * Download engine MAP
+* Add a screen of buttons for the various test functions ( test A/C clutch, test MIL lamp, etc.)
+* Implement the KEEP_ALIVE PID so connection is kept active whilst no other PIDS are being sent
+* Add GPS coords to CSV logging
+* Write some instructions and explain the buttons / screens
+
 ## Purchases
 
 * This is the super cheap MAF (£20) I purchased to replace my defective one. All I will say is it works, the car drives a little better. Most people would recommend you buy genuine and cheap MAFs generally get bad reviews. If you examine the MAPMAF vs RPM chart above you will see that the plot for the MAF has more scattering of the points. I think I have noticed that the initial idle readings when the engine is cold are higher than when engine is warmed up, this shows up as the two horizontal lines of red dots at low RPM.
