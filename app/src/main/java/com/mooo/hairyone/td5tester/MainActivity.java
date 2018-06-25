@@ -15,7 +15,8 @@ import java.util.List;
 
 import com.mooo.hairyone.td5tester.fragments.ConnectFragment;
 import com.mooo.hairyone.td5tester.fragments.DashboardFragment;
-import com.mooo.hairyone.td5tester.fragments.TemperatureAndPressure;
+import com.mooo.hairyone.td5tester.fragments.FuelDemandFragment;
+import com.mooo.hairyone.td5tester.fragments.TemperatureAndPressureFragment;
 
 import org.apache.log4j.Logger;
 
@@ -56,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         // https://stackoverflow.com/questions/8348707/prevent-viewpager-from-destroying-off-screen-views
-        viewPager.setOffscreenPageLimit(3);
+        viewPager.setOffscreenPageLimit(4);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -67,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new ConnectFragment(), "Connect");
         adapter.addFragment(new DashboardFragment(), "Dashboard");
-        adapter.addFragment(new TemperatureAndPressure(), "Temp & Pressure");
+        adapter.addFragment(new TemperatureAndPressureFragment(), "Temp & Pressure");
+        adapter.addFragment(new FuelDemandFragment(), "Fuel Demand");
         viewPager.setAdapter(adapter);
     }
 

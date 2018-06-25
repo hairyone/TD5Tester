@@ -1,0 +1,62 @@
+(With acknowledgment to Dave Johnson)
+Identifying and Resetting ABS Fault Codes
+
+Here is the process to decode your ABS system using the “Blink” method, which basically involves three steps:
+
+1)Locating your ABS test plug connector that would be used to connect to dealer diagnostic equipment,
+
+2)jumping with a paper clip or other suitable conductor across 2 of the connecting pins of the connector, which results in
+
+3) the ABS dash light “blinking out” a sequence of long and short
+flashes that will lead you to your problems. It is quick, easy and cheap. Here is what you do:
+Turn off the ignition before you start. You then need to pull the ABS warning Relay. Its a small square plug that has a green base and is the relay closest to the front of the left front seat side panel (remove seat base cover to access)
+With a pen and paper handy, find the blue 4 pin connector under the front of the driver's seat and jumper the black to black/pink wire with the key on – a paperclip will work. The ABS light will first flash a long then
+short blink to indicate the system is beginning diagnostic mode. Then you will start to get your flash sequence. Don’t panic because the code sequence will repeat. Every code starts with 2 pulses on (2.5s each) and then a series of pulses which are the rest of the code.
+Every code contains two “groups” or “sets” of flashes (i.e. blink, blink, pause, blink, blink, blink, blink, blink, blink would be code 2-6 or “Stop Light Switch Fault…see codes below.)
+Once you have the code, you can clear the code by removing the jumper while the sequence is flashing. It is possible, as it was in my case, that you have more than one code in memory, so don’t be
+discouraged if you clear the first sequence only to see another begin.
+My advice is to clear the codes, then take the vehicle for a drive, check to see if there are any new codes. The reason for this is that the codes are stored in non-volatile memory so last for ever or until they are reset. Also a tip: You can tell if any error codes have been recorded by watching the ABS lamp as you turn the ignition on. If no faults are lodged, the lamp will flash once just after you turn on the key. 
+Here are the codes:
+
+Codes:
+2-12 Front Right
+2-13 Rear Left
+2-14 Front left
+2-15 Rear Right
+Reason: Too large an air gap, or sensor has
+been forced out by exciter ring – try tapping
+sensor back into place.
+
+Codes:
+5-12 front right
+5-13 rear left
+5-14 front left
+5-15 Rear Right
+Reason: Sensor wire has an intermittent fault
+– check connection(s).
+
+Codes:
+6-12 front right
+6-13 rear left
+6-14 front left
+6-15 rear right
+
+Reason: no output from sensor. Sensor may have too large an air gap. Try tapping in sensor(s), check connections.
+
+Codes:
+4-12 Front right
+4- 13 rear left
+4- 14 front left
+4- 15 rear right
+Reason: Wiring to sensor is broken or sensor
+resistance is too high. Inspect wiring at sensors.
+
+Code 2-6: Stop light switch - faulty switch or wiring. Replace brake light switch.
+Code 2-7: Continuous supply to the ECU with the ignition off. Faulty valve relay or wiring.
+Code 2-8: No voltage to ABS Solenoid valves. Faulty valve relay or wiring.
+Codes 3-0 to 3-9: Open circuit or connection from ECU to solenoid valve in booster, or in ECU.
+Codes 4-0 to 4-9: Short circuit to earth from ECU to solenoid valve in booster.
+Codes 5-0 to 5-9: Short circuit to 12 volts in connection from ECU to solenoid valve in booster.
+Possible earth fault.
+Codes 6-0 to 6-9: Short circuit between two connections from ECU to to solenoid valve in
+booster.

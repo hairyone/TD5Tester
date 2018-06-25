@@ -10,7 +10,7 @@ public class Requests {
         TEMPERATURES, MAP_MAF, AMBIENT_PRESSURE, THROTTLE_POSITION,
         POWER_BALANCE, RPM_ERROR, EGR_MODULE, INLET_MODULE,
         WASTEGATE_MODULE, KEEP_ALIVE, FAULT_CODES, CLEAR_FAULTS,
-        GET_INPUTS, GET_FUEL_DEMAND
+        GET_INPUTS, GET_FUEL_DEMAND, ABS_INIT_FRAME
     };
 
     public class Request {
@@ -29,6 +29,7 @@ public class Requests {
 
     public Requests() {
         request.put(RequestPidEnum.INIT_FRAME,           new Request((byte)  5, "INIT_FRAME",        new byte[] { (byte) 0x81, (byte) 0x13, (byte) 0xF7, (byte) 0x81, (byte) 0x00 }));
+        request.put(RequestPidEnum.ABS_INIT_FRAME,       new Request((byte)  5, "ABS_INIT_FRAME",    new byte[] { (byte) 0xC1, (byte) 0x34, (byte) 0xF1, (byte) 0x81, (byte) 0x00 }));
         request.put(RequestPidEnum.START_DIAGNOSTICS,    new Request((byte)  3, "START_DIAGNOSTICS", new byte[] { (byte) 0x02, (byte) 0x10, (byte) 0xA0, (byte) 0x00 }));
         request.put(RequestPidEnum.REQUEST_SEED,         new Request((byte)  6, "REQUEST_SEED",      new byte[] { (byte) 0x02, (byte) 0x27, (byte) 0x01, (byte) 0x00 }));
         request.put(RequestPidEnum.KEY_RETURN,           new Request((byte)  5, "KEY_RETURN",        new byte[] { (byte) 0x04, (byte) 0x27, (byte) 0x02, (byte) 0x00, (byte) 0x00, (byte) 0x00 }));

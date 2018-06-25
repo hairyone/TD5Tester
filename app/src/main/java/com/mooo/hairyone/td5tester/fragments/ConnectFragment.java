@@ -12,7 +12,7 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.os.Environment;
+import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,10 +30,9 @@ import com.mooo.hairyone.td5tester.Requests;
 import com.mooo.hairyone.td5tester.Util;
 import com.mooo.hairyone.td5tester.events.ConnectedEvent;
 import com.mooo.hairyone.td5tester.events.DashboardEvent;
-import com.mooo.hairyone.td5tester.events.LogClearEvent;
 import com.mooo.hairyone.td5tester.events.MessageEvent;
 import com.mooo.hairyone.td5tester.events.NotConnectedEvent;
-import com.mooo.hairyone.td5tester.events.BusyEvent;
+import com.mooo.hairyone.td5tester.events.ToggleUIEvent;
 
 import org.apache.log4j.Logger;
 import org.greenrobot.eventbus.EventBus;
@@ -42,11 +41,14 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -56,15 +58,12 @@ public class ConnectFragment extends BaseFragment {
 
     Logger log = Log4jHelper.getLogger(this.getClass());
 
-    private static final String STATE_TVINFO = "TVINFO";
-    private static final String STATE_DASHBOARD_RUNNING = "DASHBOARD_RUNNING";
+    private static final String STATE__INFO_LINES = "INFO_LINES";
 
     @BindView(R.id.tvInfo) TextView tvInfo;
     @BindView(R.id.btConnect) ImageButton btConnect;
-    @BindView(R.id.btDisconnect) ImageButton btDisconnect;
     @BindView(R.id.btFastInit) ImageButton btFastInit;
     @BindView(R.id.btDashboard) ImageButton btDashboard;
-    @BindView(R.id.btClear) ImageButton btClear;
 
     byte[] mReadBuffer = new byte[Consts.RESPONSE_BUFFER_SIZE];
     boolean mHaveUsbPermission = false;
@@ -76,6 +75,9 @@ public class ConnectFragment extends BaseFragment {
     UsbEndpoint mUsbEndpointIn = null;
     UsbEndpoint mUsbEndpointOut = null;
     UsbDeviceConnection mUsbDeviceConnection = null;
+
+    private ArrayList<String> mInfoLines = new ArrayList<String>();
+    boolean mFakeUsbDeviceConnection = false;
 
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -122,58 +124,43 @@ public class ConnectFragment extends BaseFragment {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
-        tvInfo.append(event.message + "\n");
+        addInfoLine(event.message);
         log.info(event.message);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onLogClearEvent(LogClearEvent event) {
-        tvInfo.setText("");
-        //byte seed_hi = (byte) 0xcb;
-        //byte seed_lo = (byte) 0xb6;
-        //short seed = Util.bytes2short(seed_hi, seed_lo);
-        //log_msg(String.format("seed=%X, seed_hi=%X, seed_lo=%X", seed, seed_hi, seed_lo));
-        //log_msg(String.format("seed=%04X, key=%04X", seed, generate_key(seed)));
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onNotConnectedEvent(NotConnectedEvent event) {
-        Util.setImageButtonState(btConnect, true);
-        Util.setImageButtonState(btDisconnect, false);
-        Util.setImageButtonState(btFastInit, false);
+        btConnect.setImageResource(R.drawable.usb_on);
+        EventBus.getDefault().post(new ToggleUIEvent(true));
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onBusyEvent(BusyEvent event) {
-        Util.setImageButtonState(btConnect, false);
-        Util.setImageButtonState(btDisconnect, false);
-        Util.setImageButtonState(btFastInit, false);
+    public void onToggleUIEvent(ToggleUIEvent event) {
+        btConnect.setEnabled(event.enable);
+        btFastInit.setEnabled(event.enable);
+        btDashboard.setEnabled(event.enable);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConnectedEvent(ConnectedEvent event) {
-        Util.setImageButtonState(btConnect, false);
-        Util.setImageButtonState(btDisconnect, true);
-        Util.setImageButtonState(btFastInit, true);
+        btConnect.setImageResource(R.drawable.usb_off);
+        EventBus.getDefault().post(new ToggleUIEvent(true));
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         log.debug("");
-        if (tvInfo != null) {
-            savedInstanceState.putCharSequence(STATE_TVINFO, tvInfo.getText());
-        } else {
-            log.debug("tvInfo is null!");
-        }
-        savedInstanceState.putBoolean(STATE_DASHBOARD_RUNNING, mDashboardRunning);
+        Util.log_msg("onSaveInstanceState");
+        stopDashboard();
+        savedInstanceState.putStringArrayList(STATE__INFO_LINES, mInfoLines);
     }
 
     @Override public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (savedInstanceState != null) {
-            tvInfo.setText(savedInstanceState.getCharSequence(STATE_TVINFO));
-            mDashboardRunning = savedInstanceState.getBoolean(STATE_DASHBOARD_RUNNING);
+            mInfoLines = savedInstanceState.getStringArrayList((STATE__INFO_LINES));
+            Util.log_msg("onViewStateRestored");
         }
     }
 
@@ -186,31 +173,18 @@ public class ConnectFragment extends BaseFragment {
         log.trace("");
         View view =  inflater.inflate(R.layout.connect_fragment, container, false);
         unbinder = ButterKnife.bind(this, view);
-
         tvInfo.setMovementMethod(new ScrollingMovementMethod());
-
-        // set the initial button state before the EventBus is registered
-        Util.setImageButtonState(btConnect, true);
-        Util.setImageButtonState(btDisconnect, false);
-        Util.setImageButtonState(btFastInit, false);
-        Util.setImageButtonState(btClear, true);
-
         return view;
    }
 
     @OnClick(R.id.btConnect) public void connectHandler(View view) {
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
-                usb_open();
-            }
-        });
-        thread.start();
-    }
-
-    @OnClick(R.id.btDisconnect) public void disconnectHandler() {
-        Thread thread = new Thread(new Runnable() {
-            @Override public void run() {
-                usb_close();
+                if (mUsbDeviceConnection != null || mFakeUsbDeviceConnection) {
+                    usb_close();
+                } else {
+                    usb_open();
+                }
             }
         });
         thread.start();
@@ -225,36 +199,45 @@ public class ConnectFragment extends BaseFragment {
         thread.start();
     }
 
+    @OnClick(R.id.btClearFaults) public void clearFaultsHandler(View view) {
+        Thread thread = new Thread(new Runnable() {
+            @Override public void run() {
+                clear_faults();
+            }
+        });
+        thread.start();
+    }
+
     @OnClick(R.id.btDashboard) public void dashboardHandler() {
         if (mDashboardRunning) {
-            mDashboardRunning = false;
+            stopDashboard();
         } else {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    mDashboardRunning = true;
-                    dashboard();
-                }
-            });
-            thread.start();
+            startDashboard();
         }
     }
 
-    @OnClick(R.id.btClear) public void clearHandler() {
-        EventBus.getDefault().post(new LogClearEvent());
-    }
-
-    private boolean usb_open(){
-        EventBus.getDefault().post(new BusyEvent());
+    private boolean usb_open() {
+        EventBus.getDefault().post(new ToggleUIEvent(false));
         Util.log_msg("USB connecting ...");
+
+        if (Consts.DEBUG_UI) {
+            try { Thread.sleep(2000); } catch (Exception ex) {};
+            Util.log_msg("USB connected!");
+            mFakeUsbDeviceConnection = true;
+            EventBus.getDefault().post(new ConnectedEvent());
+            return true;
+        }
 
         boolean result = false;
         mFastInitCompleted = false;
+        // mDashboardRunning = false;
+        mFakeUsbDeviceConnection = false;
         mUsbDevice = null;
         mUsbInterface = null;
         mUsbEndpointIn = null;
         mUsbEndpointOut = null;
         mUsbDeviceConnection = null;
+        stopDashboard();
 
         UsbManager manager = (UsbManager) getActivity().getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
@@ -342,17 +325,28 @@ public class ConnectFragment extends BaseFragment {
     }
 
     private void usb_close() {
-        EventBus.getDefault().post(new BusyEvent());
+        EventBus.getDefault().post(new ToggleUIEvent(false));
+        stopDashboard();
         Util.log_msg("USB disconnecting ...");
 
-        if (mUsbInterface != null) {
-            mUsbDeviceConnection.releaseInterface(mUsbInterface);
-            mUsbInterface = null;
+        if (Consts.DEBUG_UI) {
+            try { Thread.sleep(2000); } catch (Exception ex) {};
+            mFakeUsbDeviceConnection = false;
+        } else {
+            if (mUsbInterface != null) {
+                if (mUsbInterface != null) {
+                    mUsbDeviceConnection.releaseInterface(mUsbInterface);
+                    mUsbInterface = null;
+                }
+            }
+            if (mUsbDeviceConnection != null) {
+                mUsbDeviceConnection.close();
+                mUsbDeviceConnection = null;
+            }
         }
-        mUsbDeviceConnection.close();
-        mUsbDeviceConnection = null;
 
         mFastInitCompleted = false;
+        mFakeUsbDeviceConnection = false;
         mHaveUsbPermission = false;
         mUsbDevice = null;
         mUsbEndpointIn = null;
@@ -391,43 +385,52 @@ public class ConnectFragment extends BaseFragment {
     }
 
     private void fast_init() {
-        EventBus.getDefault().post(new BusyEvent());
+        EventBus.getDefault().post(new ToggleUIEvent(false));
+        stopDashboard();
 
-        byte[] HI = new byte[]{(byte) 0x01};
-        byte[] LO = new byte[]{(byte) 0x00};
+        if (Consts.DEBUG_UI == false && mUsbDeviceConnection == null || Consts.DEBUG_UI && mFakeUsbDeviceConnection == false ) {
+            Util.log_msg("FASTINIT cannot be executed until you have connected to a USB device!");
+        } else {
+            Util.log_msg(String.format("Performing FASTINIT ..."));
 
-        try {
-            Util.log_msg("FASTINIT");
-            control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_ON);
-            bulk_transfer_write(HI, 1); Thread.sleep(500);
-            bulk_transfer_write(LO, 1); Thread.sleep(25);
-            bulk_transfer_write(HI, 1); Thread.sleep(25);
-            control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_OFF);
+            if (Consts.DEBUG_UI) {
+                try { Thread.sleep(2000); } catch (Exception ex) {};
+                mFastInitCompleted = true;
+            } else {
+                byte[] HI = new byte[]{(byte) 0x01};
+                byte[] LO = new byte[]{(byte) 0x00};
 
-            control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_RX, FTDI.CH_A);
-            control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_TX, FTDI.CH_A);
+                control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_ON);
 
-            // So the FTDI chip will return the current contents of the RX buffer
-            // if the latency timer has expired.
-            // control_transfer(FTDI.SIO_SET_LATENCY_TIMER, FTDI.LATENCY_MAX);
+                try {
+                    Util.log_msg("FASTINIT");
+                    bulk_transfer_write(HI, 1);
+                    Thread.sleep(500);
+                    bulk_transfer_write(LO, 1);
+                    Thread.sleep(25);
+                    bulk_transfer_write(HI, 1);
+                    Thread.sleep(25);
+                    control_transfer(FTDI.SIO_SET_BITMODE, FTDI.BITBANG_OFF);
 
-            if (get_pid(Requests.RequestPidEnum.INIT_FRAME) && get_pid(Requests.RequestPidEnum.START_DIAGNOSTICS) && get_pid(Requests.RequestPidEnum.REQUEST_SEED)) {
-                // https://stackoverflow.com/questions/736815/2-bytes-to-short-java
-                short seed = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
-                log.debug(String.format("seed=%X, seed_hi=%X, seed_lo=%X", seed, mReadBuffer[3], mReadBuffer[4]));
-                int key = generate_key(seed);
-                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) ((key & 0xFFFF) >>> 8);
-                mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
-                mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN); // && get_pid(Requests.RequestPidEnum.START_FUELLING);
+                    control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_RX, FTDI.CH_A);
+                    control_transfer(FTDI.SIO_RESET, FTDI.SIO_RESET_PURGE_TX, FTDI.CH_A);
+
+                    if (get_pid(Requests.RequestPidEnum.INIT_FRAME) && get_pid(Requests.RequestPidEnum.START_DIAGNOSTICS) && get_pid(Requests.RequestPidEnum.REQUEST_SEED)) {
+                        // https://stackoverflow.com/questions/736815/2-bytes-to-short-java
+                        short seed = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
+                        log.debug(String.format("seed=%X, seed_hi=%X, seed_lo=%X", seed, mReadBuffer[3], mReadBuffer[4]));
+                        int key = generate_key(seed);
+                        mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[3] = (byte) ((key & 0xFFFF) >>> 8);
+                        mRequests.request.get(Requests.RequestPidEnum.KEY_RETURN).request[4] = (byte) (key & 0xFF);
+                        mFastInitCompleted = get_pid(Requests.RequestPidEnum.KEY_RETURN); // && get_pid(Requests.RequestPidEnum.START_FUELLING);
+                    }
+                } catch (Exception ex) {
+                    Util.log_msg(ex.toString());
+                }
             }
             Util.log_msg(String.format("FASTINIT %s", mFastInitCompleted ? "OK" : "FAILED"));
-            if (mFastInitCompleted) {
-                log_faults();
-            }
-        } catch (Exception ex) {
-            Util.log_msg(ex.toString());
         }
-        EventBus.getDefault().post(new ConnectedEvent());
+        EventBus.getDefault().post(new ToggleUIEvent(true));
     }
 
     /*
@@ -495,15 +498,15 @@ public class ConnectFragment extends BaseFragment {
         byte[] data = mRequests.request.get(pid).request;
         data[len - 1] = checksum(data, len - 1);
 
-        // String name = mRequests.request.get(pid).name;
-        // String msg = String.format(">> %s", Util.byte_array_to_hex(data, len));
-        // if (mFastInitCompleted) {
-        //     log.debug(name);
-        //     log.debug(msg);
-        // } else {
-        //     Util.log_msg(name);
-        //     Util.log_msg(msg);
-        // }
+         String name = mRequests.request.get(pid).name;
+         String msg = String.format(">> %s", Util.byte_array_to_hex(data, len));
+         //if (mFastInitCompleted) {
+         //    log.debug(name);
+         //    log.debug(msg);
+         //} else {
+         //    Util.log_msg(name);
+         //    Util.log_msg(msg);
+         //}
 
         bulk_transfer_write(data, len);
     }
@@ -537,7 +540,7 @@ public class ConnectFragment extends BaseFragment {
             // Keep reading until we get the expected number of bytes or we timeout
             int bytes_read = bulk_transfer_read(buf, expected_len);
 
-            if (Consts.LOG_EVERY_READ) {
+            if (Consts.LOG_EVERY_READ && bytes_read > 0) {
                 log.debug(String.format("<< %s", Util.byte_array_to_hex(buf, bytes_read)));
             }
 
@@ -582,11 +585,15 @@ public class ConnectFragment extends BaseFragment {
         // Remove the echoed request
         if (offset >= request_len) {
             System.arraycopy(mReadBuffer, request_len, mReadBuffer, 0, offset - request_len);
-            log.debug(String.format("%s >> %s << %s",
-                mRequests.request.get(pid).name,
-                Util.byte_array_to_hex(mRequests.request.get(pid).request, request_len),
-                Util.byte_array_to_hex(mReadBuffer, offset - request_len)
-            ));
+            String msg = String.format("%s >> %s << %s",
+                    mRequests.request.get(pid).name,
+                    Util.byte_array_to_hex(mRequests.request.get(pid).request, request_len),
+                    Util.byte_array_to_hex(mReadBuffer, offset - request_len)
+            );
+            log.debug(msg);
+            if (Consts.DISPLAY_EVERY_REQUEST) {
+                Util.log_msg(msg);
+            }
             return offset - request_len;
         } else {
             // not enough bytes for a plausible response
@@ -610,66 +617,74 @@ public class ConnectFragment extends BaseFragment {
     }
 
     private void dashboard() {
-        int pid_count = 0;
+
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         String csv_filename = this.getActivity().getExternalFilesDir(null) + File.separator + String.format("td5tester_%s.csv", simpleDateFormat.format(new Date()));
-        Util.log_msg(String.format("dashboard starting, logging to %s", csv_filename));
         LogRecord logRecord = new LogRecord();
-        simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
         try (
             PrintWriter csv_filehandle = new PrintWriter(new FileOutputStream(new File(csv_filename), true))
         ) {
+            Util.log_msg(String.format("Dashboard starting, logging to %s", csv_filename));
+            simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
             while (mDashboardRunning) {
-                if (mFastInitCompleted) {
-                    if (get_pid(Requests.RequestPidEnum.ENGINE_RPM)) {
+                if (Consts.DEBUG_UI) {
+                    Random random = new Random();
+                    int rpm = random.nextInt(2800 - 2000) + 2000;
+                    logRecord.EngineRpm = Util.bytes2short((byte) (rpm >>> 8 & 0xFF), (byte) (rpm & 0xFF));
+                    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, logRecord.EngineRpm));
+                    try { Thread.sleep(300); } catch (Exception ex) {}
+                } else {
+                    int pid_count = 0;
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.ENGINE_RPM)) {
                         // 04 61 09 [03 06] 77
                         logRecord.EngineRpm = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
 
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.RPM, logRecord.EngineRpm));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.BATTERY_VOLTAGE)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.BATTERY_VOLTAGE)) {
                         // 06 61 10 [36 2E] 35 FA 0A
                         logRecord.BatteryVoltage = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
 
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE,  logRecord.BatteryVoltage / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.BATTERY_VOLTAGE, logRecord.BatteryVoltage / 1000.0));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.VEHICLE_SPEED)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.VEHICLE_SPEED)) {
                         // 03 61 0D [00] 71
                         logRecord.VehicleSpeed = mReadBuffer[3];
 
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.VEHICLE_SPEED, logRecord.VehicleSpeed * 0.621371));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.TEMPERATURES)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.TEMPERATURES)) {
                         // The sensor on the airbox is AAP(ambient air pressure and temp) sensor and it has temp reading only on EU3 models.
                         // 12 61 1A [0C 80] 06 A4 [0C 52] 07 59 [10 88] 00 04 [0C 06] 08 A6 DD
-                        logRecord.CoolantTemperature = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
-                        logRecord.InletTemperature = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
+                        logRecord.CoolantTemperature  = Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4]);
+                        logRecord.InletTemperature    = Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8]);
                         logRecord.ExternalTemperature = Util.bytes2short(mReadBuffer[11], mReadBuffer[12]);
-                        logRecord.FuelTemperature = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
+                        logRecord.FuelTemperature     = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
 
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.COOLANT_TEMP, (logRecord.CoolantTemperature - 2732) / 10.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.INLET_TEMP, (logRecord.InletTemperature - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.COOLANT_TEMP,  (logRecord.CoolantTemperature  - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.INLET_TEMP,    (logRecord.InletTemperature    - 2732) / 10.0));
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.EXTERNAL_TEMP, (logRecord.ExternalTemperature - 2732) / 10.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_TEMP, (logRecord.FuelTemperature - 2732) / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_TEMP,     (logRecord.FuelTemperature     - 2732) / 10.0));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.THROTTLE_POSITION)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.THROTTLE_POSITION)) {
                         // 0A 61 1B [01 68] [12 1E] [00 00] [13 82] B4
                         logRecord.AcceleratorTrack1 = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
                         logRecord.AcceleratorTrack2 = Util.bytes2short(mReadBuffer[5], mReadBuffer[6]);
                         logRecord.AcceleratorTrack3 = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
                         logRecord.AcceleratorSupply = Util.bytes2short(mReadBuffer[9], mReadBuffer[10]);
 
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_1,  logRecord.AcceleratorTrack1 / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_1, logRecord.AcceleratorTrack1 / 1000.0));
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_2, logRecord.AcceleratorTrack2 / 1000.0));
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_TRACK_3, logRecord.AcceleratorTrack3 / 1000.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_SUPPLY, logRecord.AcceleratorSupply / 1000.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.ACC_SUPPLY,  logRecord.AcceleratorSupply / 1000.0));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.AMBIENT_PRESSURE)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.AMBIENT_PRESSURE)) {
                         logRecord.AmbientPressure = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
                         // logRecord.AmbientPressureRaw = Util.bytes2short(mReadBuffer[5], mReadBuffer[6]);
 
@@ -677,15 +692,15 @@ public class ConnectFragment extends BaseFragment {
                         //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AMBIENT_PRESSURE2, logRecord.AmbientPressureRaw / 100.0));
                         pid_count++;
                     }
-                    if (get_pid(Requests.RequestPidEnum.MAP_MAF)) {
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.MAP_MAF)) {
                         logRecord.ManifoldAirPressure = Util.bytes2short(mReadBuffer[3], mReadBuffer[4]);
                         logRecord.ManifoldAirFlow = Util.bytes2short(mReadBuffer[7], mReadBuffer[8]);
 
                         EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.MANIFOLD_AIR_PRESSURE, logRecord.ManifoldAirPressure / 100.0));
-                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AIR_FLOW, logRecord.ManifoldAirFlow  / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AIR_FLOW, logRecord.ManifoldAirFlow / 10.0));
                         pid_count++;
                     }
-                    //if (get_pid(Requests.RequestPidEnum.POWER_BALANCE)) {
+                    //if (mDashboardRunning && get_pid(Requests.RequestPidEnum.POWER_BALANCE)) {
                     //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_1, Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4])));
                     //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_2, Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6])));
                     //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_3, Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8])));
@@ -693,67 +708,111 @@ public class ConnectFragment extends BaseFragment {
                     //    EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.POWER_BALANCE_5, Util.bytes2short(mReadBuffer[11], mReadBuffer[12])));
                     //    pid_count++;
                     //}
-                    if (get_pid(Requests.RequestPidEnum.GET_FUEL_DEMAND)) {
-                        logRecord.FuelDemand1 = Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4]);
-                        logRecord.FuelDemand2 = Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6]);
-                        logRecord.FuelDemand3 = Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8]);
-                        logRecord.FuelDemand4 = Util.bytes2short(mReadBuffer[ 9], mReadBuffer[10]);
-                        logRecord.FuelDemand5 = Util.bytes2short(mReadBuffer[11], mReadBuffer[12]);
-                        logRecord.FuelDemand6 = Util.bytes2short(mReadBuffer[13], mReadBuffer[14]);
-                        logRecord.FuelDemand7 = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
-                        logRecord.FuelDemand8 = Util.bytes2short(mReadBuffer[17], mReadBuffer[18]);
+                    if (mDashboardRunning && get_pid(Requests.RequestPidEnum.GET_FUEL_DEMAND)) {
+                        logRecord.DriverDemand      = Util.bytes2short(mReadBuffer[ 3], mReadBuffer[ 4]);
+                        logRecord.MafAirMass        = Util.bytes2short(mReadBuffer[ 5], mReadBuffer[ 6]);
+                        logRecord.MapAirMass        = Util.bytes2short(mReadBuffer[ 7], mReadBuffer[ 8]);
+                        logRecord.InjectionQuantity = Util.bytes2short(mReadBuffer[ 9], mReadBuffer[10]);
+                        logRecord.AfRatio           = Util.bytes2short(mReadBuffer[11], mReadBuffer[12]);
+                        logRecord.TorqueLimit       = Util.bytes2short(mReadBuffer[13], mReadBuffer[14]);
+                        logRecord.SmokeLimit        = Util.bytes2short(mReadBuffer[15], mReadBuffer[16]);
+                        logRecord.IdleDemand        = Util.bytes2short(mReadBuffer[17], mReadBuffer[18]);
 
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_1, logRecord.FuelDemand1));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_2, logRecord.FuelDemand2));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_3, logRecord.FuelDemand3));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_4, logRecord.FuelDemand4));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_5, logRecord.FuelDemand5));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_6, logRecord.FuelDemand6));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_7, logRecord.FuelDemand7));
-                        //EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.FUEL_DEMAND_8, logRecord.FuelDemand8));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.DRIVER_DEMAND,      logRecord.DriverDemand      / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.MAF_AIR_MASS,       logRecord.MafAirMass        / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.MAP_AIR_MASS,       logRecord.MapAirMass        / 10.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.INJECTION_QUANTITY, logRecord.InjectionQuantity / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.AF_RATIO,           logRecord.AfRatio           / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.TORQUE_LIMIT,       logRecord.TorqueLimit       / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.SMOKE_LIMIT,        logRecord.SmokeLimit        / 100.0));
+                        EventBus.getDefault().post(new DashboardEvent(DashboardEvent.DATA_TYPE.IDLE_DEMAND,        logRecord.IdleDemand        / 100.0));
                     }
 
                     csv_filehandle.println(String.format("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-                        simpleDateFormat.format(new Date()),
-                        logRecord.EngineRpm, logRecord.BatteryVoltage, logRecord.VehicleSpeed,
-                        logRecord.CoolantTemperature, logRecord.ExternalTemperature, logRecord.InletTemperature, logRecord.FuelTemperature,
-                        logRecord.AcceleratorTrack1, logRecord.AcceleratorTrack2, logRecord.AcceleratorTrack3, logRecord.AcceleratorSupply,
-                        logRecord.AmbientPressure, logRecord.ManifoldAirPressure, logRecord.ManifoldAirFlow,
-                        logRecord.FuelDemand1, logRecord.FuelDemand2, logRecord.FuelDemand3, logRecord.FuelDemand4,
-                        logRecord.FuelDemand5, logRecord.FuelDemand6, logRecord.FuelDemand7, logRecord.FuelDemand8
+                            simpleDateFormat.format(new Date()),
+                            logRecord.EngineRpm, logRecord.BatteryVoltage, logRecord.VehicleSpeed,
+                            logRecord.CoolantTemperature, logRecord.ExternalTemperature, logRecord.InletTemperature, logRecord.FuelTemperature,
+                            logRecord.AcceleratorTrack1, logRecord.AcceleratorTrack2, logRecord.AcceleratorTrack3, logRecord.AcceleratorSupply,
+                            logRecord.AmbientPressure, logRecord.ManifoldAirPressure, logRecord.ManifoldAirFlow,
+                            logRecord.DriverDemand, logRecord.MafAirMass, logRecord.MapAirMass, logRecord.InjectionQuantity,
+                            logRecord.AfRatio, logRecord.TorqueLimit, logRecord.SmokeLimit, logRecord.IdleDemand
                     ));
                     csv_filehandle.flush();
-
-                } else {
-                    Util.log_msg("dashboard cannot start until FASTINIT has been successful!");
-                    break;
-                }
-                if (pid_count == 0) {
-                    Util.log_msg("dashboard exiting because no PID's were read");
-                    break;
-                }
-            }
-        } catch (Exception ex) {
-            Util.log_msg(ex.toString());
-        }
-        mDashboardRunning = false;
-        Util.log_msg("dashboard stopped");
-    }
-
-    private void log_faults() {
-        if (mFastInitCompleted) {
-            if (get_pid(Requests.RequestPidEnum.FAULT_CODES)) {
-                int k = 0;
-                for (int i = 0; i < 35; i++) {
-                    byte fault_code_byte = mReadBuffer[i + 3];
-                    for (int j = 0; j < 8; j++) {
-                        if (Util.get_bit(fault_code_byte, j) == 1) {
-                            Util.log_msg(String.format("%02d-%02d %s", i + 1, j + 1, FaultCodes.faultCodeList[(i * 8) + j]));
-                        }
+                    if (pid_count == 0) {
+                        Util.log_msg("Dashboard exiting because no PID's were read");
+                        break;
                     }
                 }
             }
+            Util.log_msg("Dashboard stopped");
+        } catch (Exception ex) {
+            Util.log_msg(ex.toString());
+        } finally {
+            mDashboardRunning = false;
         }
+    }
+
+    private void clear_faults() {
+        EventBus.getDefault().post(new ToggleUIEvent(false));
+        stopDashboard();
+
+        if (mFastInitCompleted) {
+            Util.log_msg("Clearing faults ...");
+            if (Consts.DEBUG_UI) {
+                try { Thread.sleep(2000); } catch (Exception ex) {};
+            } else {
+                if (get_pid(Requests.RequestPidEnum.FAULT_CODES)) {
+                    int k = 0;
+                    for (int i = 0; i < 35; i++) {
+                        byte fault_code_byte = mReadBuffer[i + 3];
+                        for (int j = 0; j < 8; j++) {
+                            if (Util.get_bit(fault_code_byte, j) == 1) {
+                                Util.log_msg(String.format("%02d-%02d %s", i + 1, j + 1, FaultCodes.faultCodeList[(i * 8) + j]));
+                            }
+                        }
+                    }
+                }
+                get_pid(Requests.RequestPidEnum.CLEAR_FAULTS);
+            }
+            Util.log_msg("Faults cleared");
+        } else {
+            Util.log_msg("You cannot clear faults until FASTINIT has been successful!");
+        }
+
+        EventBus.getDefault().post(new ToggleUIEvent(true));
+    }
+
+    public void addInfoLine(String msg) {
+        if (msg.length() > 0) {
+            mInfoLines.add(msg) ;
+        }
+        if (mInfoLines.size() >= Consts.MAX_INFO_LINES) {
+            mInfoLines.remove(0);
+        }
+        tvInfo.setText(TextUtils.join("\n", mInfoLines));
+    }
+
+    public void startDashboard() {
+        if (mFastInitCompleted == false){
+            Util.log_msg("You cannnot run the dashboard until FASTINIT has been successful!");
+            return;
+        } else {
+            mDashboardRunning = true;
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    dashboard();
+                }
+            });
+            thread.start();
+        }
+    }
+
+    private void stopDashboard() {
+        Util.log_msg(String.format("Stopping dashboard ..."));
+        mDashboardRunning = false;
+        // FIXME: wait a while to be sure the dashboard has stopped
+        try { Thread.sleep(2000); } catch (Exception ex) {};
     }
 
 }

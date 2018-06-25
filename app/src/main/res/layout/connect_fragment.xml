@@ -36,19 +36,14 @@
         android:orientation="horizontal"
         android:padding="1sp">
 
+        <!-- https://icons8.com/icon/set/key/material -->
+
         <ImageButton
             android:id="@+id/btConnect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:srcCompat="@drawable/connected" />
-
-        <ImageButton
-            android:id="@+id/btDisconnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            app:srcCompat="@drawable/disconnected" />
+            app:srcCompat="@drawable/usb_on" />
 
         <ImageButton
             android:id="@+id/btFastInit"
@@ -58,19 +53,18 @@
             app:srcCompat="@drawable/key" />
 
         <ImageButton
+            android:id="@+id/btClearFaults"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:srcCompat="@drawable/cross" />
+
+        <ImageButton
             android:id="@+id/btDashboard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             app:srcCompat="@drawable/dashboard" />
-
-
-        <ImageButton
-            android:id="@+id/btClear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            app:srcCompat="@drawable/delete_document" />
 
     </LinearLayout>
 

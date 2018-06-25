@@ -19,12 +19,12 @@ public class LogRecord {
     public short AmbientPressureRaw;
     public short ManifoldAirPressure;
     public short ManifoldAirFlow;
-    public short FuelDemand1;
-    public short FuelDemand2;
-    public short FuelDemand3;
-    public short FuelDemand4;
-    public short FuelDemand5;
-    public short FuelDemand6;
-    public short FuelDemand7;
-    public short FuelDemand8;
+    public short IdleDemand;
+    public short DriverDemand;
+    public short TorqueLimit;
+    public short SmokeLimit;
+    public short MafAirMass;
+    public short MapAirMass;
+    public short InjectionQuantity;
+    public short AfRatio;
 }

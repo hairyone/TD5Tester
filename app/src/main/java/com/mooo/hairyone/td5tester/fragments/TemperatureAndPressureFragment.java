@@ -11,7 +11,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import at.grabner.circleprogress.CircleProgressView;
 import butterknife.BindView;
 
-public class TemperatureAndPressure extends BaseFragment {
+public class TemperatureAndPressureFragment extends BaseFragment {
 
     Logger log = Log4jHelper.getLogger(this.getClass());
 
@@ -22,7 +22,7 @@ public class TemperatureAndPressure extends BaseFragment {
     @BindView(R.id.gAIR_FLOW) CircleProgressView gAIR_FLOW;
     @BindView(R.id.gMANIFOLD_AIR_PRESSURE) CircleProgressView gMANIFOLD_AIR_PRESSURE;
 
-    public TemperatureAndPressure() { /* Required empty public constructor*/ }
+    public TemperatureAndPressureFragment() { /* Required empty public constructor*/ }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onDashboardEvent(DashboardEvent event) {
