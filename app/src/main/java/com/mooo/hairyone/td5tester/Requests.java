@@ -10,7 +10,10 @@ public class Requests {
         TEMPERATURES, MAP_MAF, AMBIENT_PRESSURE, THROTTLE_POSITION,
         POWER_BALANCE, RPM_ERROR, EGR_MODULE, INLET_MODULE,
         WASTEGATE_MODULE, KEEP_ALIVE, FAULT_CODES, CLEAR_FAULTS,
-        GET_INPUTS, GET_FUEL_DEMAND, ABS_INIT_FRAME
+        GET_INPUTS, GET_FUEL_DEMAND, ABS_INIT_FRAME, GET_VIN, GET_ECUTYPE, GET_MAPVARIANT,
+        TEST_ACCLUTCH, TEST_ACFAN, TEST_MILLAMP, TEST_FUELPUMP, TEST_GLOW,
+        TEST_PULSEREV, TEST_TURBOMOD, TEST_TEMPGAUGE, TEST_EGRMOD,
+        TEST_INJECT1, TEST_INJECT2, TEST_INJECT3, TEST_INJECT4, TEST_INJECT5
     };
 
     public class Request {
@@ -51,6 +54,24 @@ public class Requests {
         request.put(RequestPidEnum.CLEAR_FAULTS,         new Request((byte)  4, "CLEAR_FAULTS",      new byte[] { (byte) 0x14, (byte) 0x31, (byte) 0xDD, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00 }));
         request.put(RequestPidEnum.GET_INPUTS,           new Request((byte)  6, "GET_INPUTS",        new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1E, (byte) 0x00 }));
         request.put(RequestPidEnum.GET_FUEL_DEMAND,      new Request((byte) 22, "GET_FUEL_DEMAND",   new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x1D, (byte) 0x00 }));
+        request.put(RequestPidEnum.GET_VIN,              new Request((byte) 50, "GET_VIN",           new byte[] { (byte) 0x02, (byte) 0x1A, (byte) 0x87, (byte) 0x00 }));
+        request.put(RequestPidEnum.GET_ECUTYPE,          new Request((byte) 10, "GET_ECUTYPE",       new byte[] { (byte) 0x02, (byte) 0x1A, (byte) 0x9A, (byte) 0x00 }));
+        request.put(RequestPidEnum.GET_MAPVARIANT,       new Request((byte) 28, "GET_MAPVARIANT",    new byte[] { (byte) 0x02, (byte) 0x21, (byte) 0x32, (byte) 0x00 }));
+
+        request.put(RequestPidEnum.TEST_FUELPUMP,        new Request((byte)  4, "TEST_FUELPUMP",     new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xA1, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_MILLAMP,         new Request((byte)  4, "TEST_MILLAMP",      new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xA2, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_ACCLUTCH,        new Request((byte)  4, "TEST_ACCLUTCH",     new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xA3, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_ACFAN,           new Request((byte)  4, "TEST_ACFAN",        new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xA4, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_GLOW,            new Request((byte)  4, "TEST_GLOW",         new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xB3, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_PULSEREV,        new Request((byte)  4, "TEST_PULSEREV",     new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xB7, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_TEMPGAUGE,       new Request((byte)  4, "TEST_TEMPGAUGE",    new byte[] { (byte) 0x03, (byte) 0x30, (byte) 0xBA, (byte) 0xFF }));
+        request.put(RequestPidEnum.TEST_INJECT1,         new Request((byte)  4, "TEST_INJECT1",      new byte[] { (byte) 0x03, (byte) 0x31, (byte) 0xC2, (byte) 0x01 }));
+        request.put(RequestPidEnum.TEST_INJECT2,         new Request((byte)  4, "TEST_INJECT2",      new byte[] { (byte) 0x03, (byte) 0x31, (byte) 0xC2, (byte) 0x02 }));
+        request.put(RequestPidEnum.TEST_INJECT3,         new Request((byte)  4, "TEST_INJECT3",      new byte[] { (byte) 0x03, (byte) 0x31, (byte) 0xC2, (byte) 0x03 }));
+        request.put(RequestPidEnum.TEST_INJECT4,         new Request((byte)  4, "TEST_INJECT4",      new byte[] { (byte) 0x03, (byte) 0x31, (byte) 0xC2, (byte) 0x04 }));
+        request.put(RequestPidEnum.TEST_INJECT5,         new Request((byte)  4, "TEST_INJECT5",      new byte[] { (byte) 0x03, (byte) 0x31, (byte) 0xC2, (byte) 0x05 }));
+        request.put(RequestPidEnum.TEST_EGRMOD,          new Request((byte)  4, "TEST_EGRMOD",       new byte[] { (byte) 0x07, (byte) 0x30, (byte) 0xBD, (byte) 0xFF, (byte) 0x00, (byte) 0xFA, (byte) 0x13, (byte) 0x88 }));
+        request.put(RequestPidEnum.TEST_TURBOMOD,        new Request((byte)  4, "TEST_TURBOMOD",     new byte[] { (byte) 0x07, (byte) 0x30, (byte) 0xBE, (byte) 0xFF, (byte) 0x00, (byte) 0x0A, (byte) 0x13, (byte) 0x88 }));
     }
 
 }
