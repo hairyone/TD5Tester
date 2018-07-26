@@ -33,7 +33,7 @@
                 CircleProgressView:cpv_value="30"
                 CircleProgressView:cpv_maxValue="60"
                 CircleProgressView:cpv_showUnit="true"
-                CircleProgressView:cpv_unit="Idle"
+                CircleProgressView:cpv_unit="Idle mg/str"
                 CircleProgressView:cpv_unitPosition="bottom"
                 CircleProgressView:cpv_textMode="Value"
                 CircleProgressView:cpv_startAngle="90"/>
